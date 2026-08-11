@@ -310,6 +310,36 @@ async def command_scores_handler(message: Message) -> None:
     except Exception as e:
         await message.answer(f"❌ Lỗi khi đọc file bảng điểm: {e}")
 
+from src.network.pihole_controller import disable_blocklist
+
+@router.message(Command("unlock"))
+async def command_unlock_handler(message: Message) -> None:
+    """Xử lý lệnh /unlock: Tạm thời mở khóa Internet nếu hoàn thành mọi nhiệm vụ"""
+    user_id = db.get_user_id(message.from_user.id)
+    if not user_id:
+        return
+        
+    tasks = db.get_daily_tasks(user_id)
+    completed_task_ids = db.get_completed_tasks_today(user_id)
+    
+    # Kiểm tra xem có task nào chưa hoàn thành không
+    total_tasks = len(tasks) if tasks else 0
+    completed = len(completed_task_ids)
+    
+    if total_tasks == 0:
+        await message.answer("Cậu chưa có nhiệm vụ nào hôm nay. Sẽ không mở khóa trừ khi có lý do chính đáng!")
+        return
+        
+    if completed >= total_tasks:
+        # Tắt blocklist trong 1 giờ (3600 giây)
+        success = disable_blocklist(3600)
+        if success:
+            await message.answer("✅ **XÁC NHẬN:** Cậu đã hoàn thành 100% nhiệm vụ hôm nay.\n\n🔓 Tớ đã tạm thời mở khóa mạng xã hội trong vòng **1 tiếng**. Hãy thư giãn nhé!")
+        else:
+            await message.answer("❌ Có lỗi xảy ra khi giao tiếp với Pi-hole. Hãy kiểm tra lại API Token.")
+    else:
+        await message.answer(f"❌ **TỪ CHỐI:** Cậu mới hoàn thành {completed}/{total_tasks} nhiệm vụ.\n\nĐi học bài ngay! Không có YouTube hay TikTok gì hết cho đến khi hoàn thành 100%!")
+
 @router.message(F.text)
 async def text_handler(message: Message) -> None:
     """Xử lý tin nhắn text thông thường (tóm tắt sách, tâm sự)"""

@@ -1,50 +1,41 @@
 import os
-import requests
+import subprocess
 import logging
-from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
-# Load config
-load_dotenv()
-load_dotenv(os.path.join(os.path.dirname(__file__), "../..", "API_KEYS.txt"))
-PIHOLE_URL = os.getenv("PIHOLE_URL")
-PIHOLE_AUTH_TOKEN = os.getenv("PIHOLE_AUTH_TOKEN")
-
 def enable_blocklist():
     """Bật lại blocklist (Thiết quân luật/Giới nghiêm)"""
-    if not PIHOLE_AUTH_TOKEN or PIHOLE_AUTH_TOKEN == "YOUR_PIHOLE_AUTH_TOKEN_HERE":
-        logger.info("[MOCK PI-HOLE] Đã BẬT blocklist (Internet đã bị chặn).")
-        return True
-        
     try:
-        url = f"{PIHOLE_URL}?enable=1&auth={PIHOLE_AUTH_TOKEN}"
-        response = requests.get(url)
-        if response.status_code == 200:
-            logger.info("Pi-hole: Đã bật blocklist thành công.")
+        # Nếu Bot chạy cùng server với Pi-hole, gọi lệnh trực tiếp
+        result = subprocess.run(["pihole", "enable"], capture_output=True, text=True)
+        if result.returncode == 0:
+            logger.info("Pi-hole: Đã bật blocklist thành công (CLI).")
             return True
         else:
-            logger.error(f"Pi-hole lỗi: {response.status_code}")
+            logger.error(f"Pi-hole lỗi (CLI): {result.stderr}")
             return False
+    except FileNotFoundError:
+        logger.info("[MOCK PI-HOLE] Lệnh pihole không tồn tại. Đã BẬT blocklist ảo.")
+        return True
     except Exception as e:
-        logger.error(f"Lỗi gọi API Pi-hole: {e}")
+        logger.error(f"Lỗi gọi CLI Pi-hole: {e}")
         return False
 
 def disable_blocklist(seconds=7200):
     """Tạm thời tắt blocklist (Mở Internet) trong `seconds` giây"""
-    if not PIHOLE_AUTH_TOKEN or PIHOLE_AUTH_TOKEN == "YOUR_PIHOLE_AUTH_TOKEN_HERE":
-        logger.info(f"[MOCK PI-HOLE] Đã TẮT blocklist trong {seconds} giây (Được phép vào mạng).")
-        return True
-        
+    minutes = seconds // 60
     try:
-        url = f"{PIHOLE_URL}?disable={seconds}&auth={PIHOLE_AUTH_TOKEN}"
-        response = requests.get(url)
-        if response.status_code == 200:
-            logger.info(f"Pi-hole: Đã tắt blocklist tạm thời ({seconds} giây).")
+        result = subprocess.run(["pihole", "disable", f"{minutes}m"], capture_output=True, text=True)
+        if result.returncode == 0:
+            logger.info(f"Pi-hole: Đã tắt blocklist tạm thời ({minutes} phút).")
             return True
         else:
-            logger.error(f"Pi-hole lỗi: {response.status_code}")
+            logger.error(f"Pi-hole lỗi (CLI): {result.stderr}")
             return False
+    except FileNotFoundError:
+        logger.info(f"[MOCK PI-HOLE] Lệnh pihole không tồn tại. Đã TẮT blocklist trong {minutes} phút.")
+        return True
     except Exception as e:
-        logger.error(f"Lỗi gọi API Pi-hole: {e}")
+        logger.error(f"Lỗi gọi CLI Pi-hole: {e}")
         return False

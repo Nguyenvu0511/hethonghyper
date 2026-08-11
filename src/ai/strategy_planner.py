@@ -73,17 +73,18 @@ def generate_academic_advice(records_text, target="Bằng Đỏ"):
     {records_text}
     
     Yêu cầu:
-    1. Chỉ ra những môn điểm F bắt buộc phải đăng ký học lại ngay.
-    2. Chỉ ra các môn có điểm D hoặc C- đang kéo lùi GPA. Tính toán xem có NÊN học cải thiện môn đó không.
-    3. Đưa ra 1 chiến lược tổng thể để cứu vớt tình hình.
-    4. Trích xuất danh sách các môn học cụ thể cần đưa vào LỘ TRÌNH học lại/cải thiện.
-    5. Đề xuất các NHIỆM VỤ HÀNG NGÀY (daily tasks) cụ thể: Bắt buộc phải có cả nhiệm vụ cho các môn yếu CẦN CẢI THIỆN, VÀ ĐẶC BIỆT LÀ nhiệm vụ học tập mỗi ngày cho CÁC MÔN CỦA HỌC KỲ HIỆN TẠI (những môn trong danh sách chưa có điểm). Mục tiêu là không để rớt môn mới.
+    1. Chỉ ra những môn điểm F bắt buộc phải đăng ký học lại ngay. Nhận xét thật gắt gao.
+    2. Chỉ ra các môn có điểm D hoặc C- đang kéo lùi GPA. Tính toán xem có NÊN học cải thiện môn đó không và phân tích kỹ TỪNG MÔN MỘT (tại sao phải học lại, ích lợi là gì).
+    3. Đưa ra 1 chiến lược tổng thể dài hạn để cứu vớt tình hình, thái độ học tập, và dặn dò cực kỳ nghiêm khắc.
+    4. Giọng điệu: Khinh bỉ sự lười biếng, tàn nhẫn, lạnh lùng, nhưng phân tích cực kỳ logic và thuyết phục. Viết cực kỳ DÀI và CHI TIẾT.
+    5. Trích xuất danh sách các môn học cụ thể cần đưa vào LỘ TRÌNH học lại/cải thiện.
+    6. Đề xuất các NHIỆM VỤ HÀNG NGÀY (daily tasks) cụ thể.
     
     BẮT BUỘC TRẢ VỀ CHÍNH XÁC ĐỊNH DẠNG JSON (Không chứa Markdown ```json, chỉ chuỗi JSON thô), với cấu trúc sau:
     {{
-      "advice": "Văn bản nhận xét chi tiết gồm 3 phần: [CẢNH BÁO ĐỎ], [CHIẾN LƯỢC CẢI THIỆN], [LỜI KHUYÊN TỔNG THỂ]. (Sử dụng \\n để xuống dòng, không dùng markdown quá phức tạp)",
+      "advice": "Văn bản nhận xét cực kỳ dài và chi tiết. Viết giống hệt một bài báo cáo phân tích sâu sắc, chia làm 3 phần rõ rệt: [CẢNH BÁO ĐỎ], [CHIẾN LƯỢC CẢI THIỆN] (phân tích từng môn), [LỜI KHUYÊN TỔNG THỂ]. Dùng \\n\\n để tạo các đoạn văn cách nhau dễ nhìn.",
       "roadmap": [
-         {{"subject_name": "Tên môn học", "target_level": "Mục tiêu (ví dụ: B+ hoặc A)", "end_date": "YYYY-MM-DD (ngày kết thúc học kỳ tới, tự ước lượng khoảng 90 ngày sau)"}}
+         {{"subject_name": "Tên môn học", "target_level": "Mục tiêu (ví dụ: B+ hoặc A)", "end_date": "YYYY-MM-DD"}}
       ],
       "daily_tasks": [
          {{"category": "Học thuật", "title": "Tên nhiệm vụ ngắn gọn", "description": "Mô tả chi tiết nhiệm vụ", "target_time": "Thời gian dự kiến (ví dụ 20:00)"}}

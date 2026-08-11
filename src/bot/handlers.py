@@ -256,3 +256,60 @@ async def text_handler(message: Message) -> None:
     status, feedback = evaluate_text_report("Tóm tắt sách / Báo cáo chung", message.text)
     
     await msg.edit_text(f"Kết quả: [{status.upper()}]\n\nNhận xét:\n{feedback}")
+
+import json
+@router.message(Command("scores"))
+async def command_scores_handler(message: Message) -> None:
+    """Xử lý lệnh /scores, xem lại bảng điểm đã lưu mà không cần cào lại"""
+    file_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "scores_output.json")
+    
+    if not os.path.exists(file_path):
+        await message.answer("❌ Chưa có dữ liệu bảng điểm. Cậu hãy chạy lệnh /update_scores ít nhất 1 lần để hệ thống cào điểm về nhé!")
+        return
+        
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            scores = json.load(f)
+            
+        if not scores:
+            await message.answer("Bảng điểm hiện tại đang trống.")
+            return
+            
+        res = "🎓 **BẢNG ĐIỂM CỦA CẬU (BẢN LƯU GẦN NHẤT)** 🎓\n\n"
+        
+        # Nhóm theo trạng thái điểm
+        passed = []
+        failed = []
+        studying = []
+        
+        for item in scores:
+            diem_chu = item.get("diem_chu", "Chưa có")
+            text = f"▪️ {item['ten_mon']} ({item['so_tin_chi']} TC): {item['diem_tong_ket']} ({diem_chu})"
+            if diem_chu == "F":
+                failed.append(text)
+            elif diem_chu == "Chưa có":
+                studying.append(text)
+            else:
+                passed.append(text)
+                
+        if failed:
+            res += "❌ **BÁO ĐỘNG (RỚT MÔN):**\n" + "\n".join(failed) + "\n\n"
+        if studying:
+            res += "⏳ **ĐANG HỌC KỲ NÀY:**\n" + "\n".join(studying) + "\n\n"
+        if passed:
+            res += "✅ **ĐÃ QUA MÔN:**\n" + "\n".join(passed) + "\n\n"
+            
+        res += "_💡 Ghi chú: Để cập nhật điểm số mới nhất từ trường, hãy dùng lệnh /update_scores_"
+        
+        # Gửi theo từng phần nếu quá dài
+        max_length = 4000
+        if len(res) > max_length:
+            parts = [res[i:i+max_length] for i in range(0, len(res), max_length)]
+            for part in parts:
+                await message.answer(part, parse_mode="Markdown")
+        else:
+            await message.answer(res, parse_mode="Markdown")
+            
+    except Exception as e:
+        await message.answer(f"❌ Lỗi khi đọc file bảng điểm: {e}")
+

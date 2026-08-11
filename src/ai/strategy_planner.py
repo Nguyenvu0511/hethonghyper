@@ -1,0 +1,149 @@
+import logging
+import google.generativeai as genai
+from src.ai.evaluator import model
+
+logger = logging.getLogger(__name__)
+
+def generate_aa_strategy(syllabus_text):
+    """
+    Phân tích đề cương môn học (Syllabus) để sinh ra lộ trình lấy điểm A/A+.
+    """
+    if not model:
+        return "AI chưa được cấu hình. Không thể phân tích đề cương."
+        
+    prompt = f"""
+    Bạn là một Chiến Lược Gia Học Tập cực kỳ xuất sắc.
+    Sinh viên vừa cung cấp cho bạn một đề cương môn học (Syllabus). Mục tiêu của sinh viên là lấy điểm A hoặc A+ (trên 8.5 hoặc 9.0) cho môn này.
+    
+    Đề cương môn học:
+    "{syllabus_text}"
+    
+    Nhiệm vụ của bạn:
+    1. Trích xuất các trọng số điểm (nếu có): Chuyên cần, Bài tập, Giữa kỳ, Cuối kỳ.
+    2. Dựa vào trọng số đó, đưa ra chiến lược tối ưu:
+       - Phần nào cần tập trung học hàng ngày?
+       - Mẹo lấy điểm tối đa ở phần Tiểu luận/Thuyết trình (nếu có)?
+       - Chiến thuật ôn thi cuối kỳ (Cần bắt đầu ôn trước bao nhiêu tuần).
+    3. Trả về kết quả dưới dạng Markdown chuyên nghiệp, rõ ràng, mang tính động viên và kỷ luật thép.
+    """
+    
+    try:
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        logger.error(f"Lỗi khi sinh chiến lược A/A+: {e}")
+        return f"Lỗi xử lý đề cương: {e}"
+
+def generate_daily_quiz(subject_name):
+    """
+    Sinh bài tập nhỏ (Quiz) hằng ngày để 'Xóa mù chữ' cho các môn yếu.
+    """
+    if not model:
+        return "AI chưa được cấu hình. Không thể ra bài tập."
+        
+    prompt = f"""
+    Bạn là một Gia Sư khắt khe nhưng cực kỳ tâm huyết.
+    Học sinh của bạn đang bị hổng kiến thức môn "{subject_name}" ở bậc Đại học.
+    Mục tiêu: Xóa mù chữ và phục hồi nền tảng căn bản (Toán cao cấp, Vật lý, Kỹ thuật điện...).
+    
+    Hãy sinh ra 1 BÀI TẬP DUY NHẤT (trắc nghiệm hoặc tự luận ngắn) tập trung vào một khái niệm lõi của môn "{subject_name}".
+    Bài tập này không được quá khó, nhưng phải đánh trúng bản chất.
+    Trả về định dạng Markdown, có đánh dấu phần [CÂU HỎI]. KHÔNG BAO GỒM LỜI GIẢI (vì học sinh phải tự giải ra giấy và nộp lại).
+    """
+    
+    try:
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        logger.error(f"Lỗi khi sinh Quiz môn {subject_name}: {e}")
+        return f"Lỗi ra đề: {e}"
+
+def generate_academic_advice(records_text, target="Bằng Đỏ"):
+    """
+    Phân tích bảng điểm và đưa ra lời khuyên "Báo cáo Sát thủ" dựa trên mục tiêu Bằng Đỏ.
+    """
+    if not model:
+        return "AI chưa được cấu hình."
+        
+    prompt = f"""
+    Bạn là Cố Vấn Học Tập tàn nhẫn nhưng chân thành. 
+    Học sinh của bạn có mục tiêu đạt được "{target}" (GPA >= 3.2 hoặc 3.6).
+    
+    Dưới đây là lịch sử điểm số của học sinh (đã thu thập được):
+    {records_text}
+    
+    Yêu cầu:
+    1. Chỉ ra những môn điểm F bắt buộc phải đăng ký học lại ngay.
+    2. Chỉ ra các môn có điểm D hoặc C- đang kéo lùi GPA. Tính toán xem có NÊN học cải thiện môn đó không.
+    3. Đưa ra 1 chiến lược tổng thể để cứu vớt tình hình.
+    4. Trích xuất danh sách các môn học cụ thể cần đưa vào LỘ TRÌNH học lại/cải thiện.
+    5. Đề xuất các NHIỆM VỤ HÀNG NGÀY (daily tasks) cụ thể: Bắt buộc phải có cả nhiệm vụ cho các môn yếu CẦN CẢI THIỆN, VÀ ĐẶC BIỆT LÀ nhiệm vụ học tập mỗi ngày cho CÁC MÔN CỦA HỌC KỲ HIỆN TẠI (những môn trong danh sách chưa có điểm). Mục tiêu là không để rớt môn mới.
+    
+    BẮT BUỘC TRẢ VỀ CHÍNH XÁC ĐỊNH DẠNG JSON (Không chứa Markdown ```json, chỉ chuỗi JSON thô), với cấu trúc sau:
+    {{
+      "advice": "Văn bản nhận xét chi tiết gồm 3 phần: [CẢNH BÁO ĐỎ], [CHIẾN LƯỢC CẢI THIỆN], [LỜI KHUYÊN TỔNG THỂ]. (Sử dụng \\n để xuống dòng, không dùng markdown quá phức tạp)",
+      "roadmap": [
+         {{"subject_name": "Tên môn học", "target_level": "Mục tiêu (ví dụ: B+ hoặc A)", "end_date": "YYYY-MM-DD (ngày kết thúc học kỳ tới, tự ước lượng khoảng 90 ngày sau)"}}
+      ],
+      "daily_tasks": [
+         {{"category": "Học thuật", "title": "Tên nhiệm vụ ngắn gọn", "description": "Mô tả chi tiết nhiệm vụ", "target_time": "Thời gian dự kiến (ví dụ 20:00)"}}
+      ]
+    }}
+    """
+    import time
+    import json
+    max_retries = 4
+    for attempt in range(max_retries):
+        try:
+            # force response mime type to application/json
+            response = model.generate_content(
+                prompt,
+                generation_config=genai.types.GenerationConfig(response_mime_type="application/json")
+            )
+            # Parse JSON
+            result = json.loads(response.text)
+            return result
+        except json.JSONDecodeError as e:
+            logger.error(f"Lỗi parse JSON từ AI: {e}. Raw text: {response.text}")
+            if attempt == max_retries - 1:
+                return {"advice": "Lỗi định dạng phản hồi từ AI.", "roadmap": [], "daily_tasks": []}
+        except Exception as e:
+            if "429" in str(e) and attempt < max_retries - 1:
+                logger.warning(f"Bị giới hạn API (Rate limit 429). Thử lại sau 30 giây... (Lần {attempt+1}/{max_retries})")
+                time.sleep(30)
+                continue
+            logger.error(f"Lỗi khi sinh Academic Advice: {e}")
+            return {"advice": f"Lỗi phân tích: {e}", "roadmap": [], "daily_tasks": []}
+
+def summarize_announcement(html_content):
+    """
+    Tóm tắt nội dung thông báo từ MyDTU.
+    """
+    if not model:
+        return "AI chưa được cấu hình."
+        
+    prompt = f"""
+    Dưới đây là mã HTML/text của một thông báo từ trường đại học:
+    "{html_content}"
+    
+    Hãy đọc và TÓM TẮT THẬT NGẮN GỌN (bullet points) thông báo trên. 
+    Lọc bỏ các thủ tục rườm rà. Chỉ lấy: 
+    - Sự kiện gì?
+    - Dành cho ai? 
+    - Có deadline/thời hạn hành động không?
+    
+    Sử dụng giọng điệu nhắc nhở dứt khoát của một Bot AI Kỷ Luật.
+    """
+    
+    import time
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            if "429" in str(e) and attempt < max_retries - 1:
+                time.sleep(15)
+                continue
+            logger.error(f"Lỗi khi tóm tắt thông báo: {e}")
+            return f"Lỗi phân tích nội dung: {e}"

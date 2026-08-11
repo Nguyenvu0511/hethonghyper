@@ -1,0 +1,8 @@
+__pycache__/
+*.db
+.env
+API_KEYS.txt
+*.png
+*.html
+*.json
+scratch/

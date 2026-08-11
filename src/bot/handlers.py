@@ -38,10 +38,15 @@ async def command_status_handler(message: Message) -> None:
         await message.answer("Hôm nay cậu chưa có nhiệm vụ nào được giao. Hãy nghỉ ngơi hoặc tự ôn tập nhé!")
         return
         
+    completed_task_ids = db.get_completed_tasks_today(user_id)
+    
     response = "📋 **NHIỆM VỤ HÔM NAY:**\n\n"
     for t in tasks:
         task_id, category, title, description, target_time = t
-        response += f"🔹 [{category}] {title}\n"
+        if task_id in completed_task_ids:
+            response += f"✅ ~~[{category}] {title}~~\n"
+        else:
+            response += f"🔹 [{category}] {title}\n"
         response += f"   - Yêu cầu: {description}\n"
         if target_time:
             response += f"   - Deadline: {target_time}\n"
@@ -186,10 +191,15 @@ async def command_tasks_handler(message: Message) -> None:
         await message.answer("Cậu chưa có nhiệm vụ nào. Hãy gõ /update_scores để AI lên lịch trình nhé!")
         return
         
+    completed_task_ids = db.get_completed_tasks_today(user_id)
+    
     res = "📋 **DANH SÁCH NHIỆM VỤ HÀNG NGÀY CỦA CẬU:**\n\n"
     for t in tasks:
         task_id, category, title, description, target_time = t
-        res += f"🔹 **ID: {task_id}** | {target_time} - {title}\n"
+        if task_id in completed_task_ids:
+            res += f"✅ ~~**ID: {task_id}** | {target_time} - {title}~~\n"
+        else:
+            res += f"🔹 **ID: {task_id}** | {target_time} - {title}\n"
         res += f"   _{description}_\n"
     
     res += "\n👉 Để đánh dấu hoàn thành, hãy gõ lệnh: `/done <ID_Nhiệm_vụ>`"

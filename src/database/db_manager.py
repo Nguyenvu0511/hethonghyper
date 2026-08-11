@@ -65,6 +65,17 @@ class DatabaseManager:
                 WHERE user_id = ? AND frequency = 'daily'
             ''', (user_id,))
             return cursor.fetchall()
+
+    def get_completed_tasks_today(self, user_id):
+        today = datetime.now().strftime('%Y-%m-%d')
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT DISTINCT task_id FROM daily_progress 
+                WHERE user_id = ? AND date = ? AND status = 'completed'
+            ''', (user_id, today))
+            return [row[0] for row in cursor.fetchall()]
+
             
     def log_daily_progress(self, user_id, task_id, status, proof_type=None, proof_content=None, ai_evaluation=None):
         today = datetime.now().strftime('%Y-%m-%d')

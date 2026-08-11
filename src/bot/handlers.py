@@ -260,16 +260,18 @@ async def command_scores_handler(message: Message) -> None:
             await message.answer("Bảng điểm hiện tại đang trống.")
             return
             
-        res = "🎓 **BẢNG ĐIỂM CỦA CẬU (BẢN LƯU GẦN NHẤT)** 🎓\n\n"
+        res = "🎓 <b>BẢNG ĐIỂM CỦA CẬU (BẢN LƯU GẦN NHẤT)</b> 🎓\n\n"
         
         # Nhóm theo trạng thái điểm
         passed = []
         failed = []
         studying = []
         
+        import html
         for item in scores:
             diem_chu = item.get("diem_chu", "Chưa có")
-            text = f"▪️ {item['ten_mon']} ({item['so_tin_chi']} TC): {item['diem_tong_ket']} ({diem_chu})"
+            ten_mon = html.escape(item['ten_mon'])
+            text = f"▪️ {ten_mon} ({item['so_tin_chi']} TC): {item['diem_tong_ket']} ({diem_chu})"
             if diem_chu == "F":
                 failed.append(text)
             elif diem_chu == "Chưa có":
@@ -278,22 +280,22 @@ async def command_scores_handler(message: Message) -> None:
                 passed.append(text)
                 
         if failed:
-            res += "❌ **BÁO ĐỘNG (RỚT MÔN):**\n" + "\n".join(failed) + "\n\n"
+            res += "❌ <b>BÁO ĐỘNG (RỚT MÔN):</b>\n" + "\n".join(failed) + "\n\n"
         if studying:
-            res += "⏳ **ĐANG HỌC KỲ NÀY:**\n" + "\n".join(studying) + "\n\n"
+            res += "⏳ <b>ĐANG HỌC KỲ NÀY:</b>\n" + "\n".join(studying) + "\n\n"
         if passed:
-            res += "✅ **ĐÃ QUA MÔN:**\n" + "\n".join(passed) + "\n\n"
+            res += "✅ <b>ĐÃ QUA MÔN:</b>\n" + "\n".join(passed) + "\n\n"
             
-        res += "_💡 Ghi chú: Để cập nhật điểm số mới nhất từ trường, hãy dùng lệnh /update_scores_"
+        res += "<i>💡 Ghi chú: Để cập nhật điểm số mới nhất từ trường, hãy dùng lệnh /update_scores</i>"
         
         # Gửi theo từng phần nếu quá dài
         max_length = 4000
         if len(res) > max_length:
             parts = [res[i:i+max_length] for i in range(0, len(res), max_length)]
             for part in parts:
-                await message.answer(part, parse_mode="Markdown")
+                await message.answer(part, parse_mode="HTML")
         else:
-            await message.answer(res, parse_mode="Markdown")
+            await message.answer(res, parse_mode="HTML")
             
     except Exception as e:
         await message.answer(f"❌ Lỗi khi đọc file bảng điểm: {e}")

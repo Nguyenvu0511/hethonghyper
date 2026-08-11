@@ -242,21 +242,6 @@ async def photo_handler(message: Message, bot: Bot) -> None:
         
     await msg.edit_text(f"Kết quả: [{status.upper()}]\n\nNhận xét của AI:\n{feedback}")
 
-@router.message(F.text)
-async def text_handler(message: Message) -> None:
-    """Xử lý tin nhắn text thông thường (tóm tắt sách, tâm sự)"""
-    text = message.text.lower()
-    
-    if text.startswith("/"):
-        return # Bỏ qua các lệnh
-        
-    msg = await message.answer("Đang phân tích báo cáo của cậu...")
-    
-    # Chấm điểm bằng AI
-    status, feedback = evaluate_text_report("Tóm tắt sách / Báo cáo chung", message.text)
-    
-    await msg.edit_text(f"Kết quả: [{status.upper()}]\n\nNhận xét:\n{feedback}")
-
 import json
 @router.message(Command("scores"))
 async def command_scores_handler(message: Message) -> None:
@@ -312,4 +297,19 @@ async def command_scores_handler(message: Message) -> None:
             
     except Exception as e:
         await message.answer(f"❌ Lỗi khi đọc file bảng điểm: {e}")
+
+@router.message(F.text)
+async def text_handler(message: Message) -> None:
+    """Xử lý tin nhắn text thông thường (tóm tắt sách, tâm sự)"""
+    text = message.text.lower()
+    
+    if text.startswith("/"):
+        return # Bỏ qua các lệnh
+        
+    msg = await message.answer("Đang phân tích báo cáo của cậu...")
+    
+    # Chấm điểm bằng AI
+    status, feedback = evaluate_text_report("Tóm tắt sách / Báo cáo chung", message.text)
+    
+    await msg.edit_text(f"Kết quả: [{status.upper()}]\n\nNhận xét:\n{feedback}")
 

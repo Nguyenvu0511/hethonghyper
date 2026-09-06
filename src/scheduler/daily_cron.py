@@ -17,19 +17,14 @@ async def wake_up_call(bot: Bot, user_telegram_id: str):
     except Exception as e:
         logger.error(f"Lỗi khi gửi wake_up_call: {e}")
 
-from src.network.pihole_controller import enable_blocklist
-
 async def skincare_reminder(bot: Bot, user_telegram_id: str):
-    """Nhắc nhở Skincare lúc 22:30 và sập cầu dao Internet"""
+    """Nhắc nhở Skincare lúc 22:30"""
     try:
         await bot.send_message(
             user_telegram_id, 
             "💆‍♂️ Đã 22:30. Đã đến giờ bảo dưỡng 'Giao diện'.\n"
-            "Tớ đã KÍCH HOẠT KỶ LUẬT THÉP (Sập cầu dao mạng xã hội).\n"
-            "Hãy đi rửa mặt, thoa toner và kem dưỡng. Nếu cậu đã hoàn thành 100% nhiệm vụ hôm nay, cậu có thể dùng lệnh /unlock để mở mạng thêm 1 tiếng."
+            "Hãy đi rửa mặt, thoa toner và kem dưỡng. Đừng quên đi ngủ sớm nhé!"
         )
-        # Kích hoạt Pi-hole chặn mạng
-        enable_blocklist()
     except Exception as e:
         logger.error(f"Lỗi khi gửi skincare_reminder: {e}")
 

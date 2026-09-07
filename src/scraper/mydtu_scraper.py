@@ -98,6 +98,22 @@ async def solve_captcha(image_bytes: bytes, base64_image: str = None, api_key: s
                 raise Exception(f"Gemini API Error: {data.get('error', 'Unknown error')}")
 
 
+async def get_captcha_base64_from_canvas(page) -> str:
+    """Trích xuất ảnh Captcha gốc qua Canvas để không bị vỡ tỉ lệ/viền như khi dùng screenshot"""
+    js_code = """
+    () => {
+        const img = document.querySelector('#UpdatePanel1 img') || document.querySelector('img[src*="CaptchaImage.axd"]');
+        if (!img) return null;
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext("2d").drawImage(img, 0, 0);
+        return canvas.toDataURL("image/png").replace(/^data:image\\/(png|jpg|jpeg);base64,/, "");
+    }
+    """
+    return await page.evaluate(js_code)
+
+
 async def crawl_student_scores(username: str = MYDTU_USER, password: str = MYDTU_PASS, gemini_key: str = GEMINI_CAPTCHA_API_KEY):
     """
     MÃ NGUỒN TỰ ĐỘNG ĐĂNG NHẬP TRƯỜNG DUY TÂN (MYDTU) & QUÉT BẢNG ĐIỂM SỐ CỤ THỂ.
@@ -124,23 +140,28 @@ async def crawl_student_scores(username: str = MYDTU_USER, password: str = MYDTU
             # Ẩn quảng cáo
             await page.add_style_tag(content=".darkness, #popout, #adbox { display: none !important; }")
 
-            # 2. Thực hiện đăng nhập (thử tối đa 4 lần nếu sai Captcha)
+            # 2. Thực hiện đăng nhập (thử tối đa 10 lần nếu sai Captcha)
             logged_in = False
-            for attempt in range(1, 5):
-                logger.info(f"-> Thử đăng nhập lần {attempt}/4...")
+            for attempt in range(1, 11):
+                logger.info(f"-> Thử đăng nhập lần {attempt}/10...")
 
                 await page.fill("input#txtUser", username)
                 await page.fill("input#txtPass", password)
 
-                captcha_el = await page.query_selector('#UpdatePanel1 img, img[src*="CaptchaImage.axd"]')
-                if not captcha_el:
-                    logger.error("Không thấy thẻ Captcha!")
+                base64_str = await get_captcha_base64_from_canvas(page)
+                if not base64_str:
+                    logger.error("Không lấy được ảnh Captcha từ Canvas!")
                     break
 
-                captcha_bytes = await captcha_el.screenshot()
+                captcha_bytes = base64.b64decode(base64_str)
 
                 try:
                     captcha_code = await solve_captcha(image_bytes=captcha_bytes, api_key=gemini_key)
+                    if len(captcha_code) != 4:
+                        logger.warning(f"   Captcha ({captcha_code}) sai độ dài (phải 4 ký tự). Đang tải lại ảnh mới...")
+                        await page.reload(wait_until="load")
+                        continue
+                        
                     logger.info(f"   Giải Captcha thành công: {captcha_code}")
                 except Exception as ge:
                     logger.warning(f"   Giải Captcha thất bại: {ge}")
@@ -264,18 +285,21 @@ async def crawl_new_announcements(username: str = MYDTU_USER, password: str = MY
             await page.add_style_tag(content=".darkness, #popout, #adbox { display: none !important; }")
 
             logged_in = False
-            for attempt in range(1, 5):
+            for attempt in range(1, 11):
                 await page.fill("input#txtUser", username)
                 await page.fill("input#txtPass", password)
 
-                captcha_el = await page.query_selector('#UpdatePanel1 img, img[src*="CaptchaImage.axd"]')
-                if not captcha_el:
+                base64_str = await get_captcha_base64_from_canvas(page)
+                if not base64_str:
                     break
 
-                captcha_bytes = await captcha_el.screenshot()
+                captcha_bytes = base64.b64decode(base64_str)
 
                 try:
                     captcha_code = await solve_captcha(image_bytes=captcha_bytes, api_key=gemini_key)
+                    if len(captcha_code) != 4:
+                        await page.reload(wait_until="load")
+                        continue
                 except Exception:
                     await page.reload(wait_until="load")
                     continue

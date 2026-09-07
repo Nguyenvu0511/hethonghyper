@@ -39,10 +39,36 @@ LOGIN_URL = "https://mydtu.duytan.edu.vn/Signin.aspx"
 TRANSCRIPT_URL = "https://mydtu.duytan.edu.vn/sites/index.aspx?p=home_bangdiem&functionid=14"
 
 
-async def solve_captcha_gemini(base64_image: str, api_key: str) -> str:
+# Khởi tạo mô hình OCR ddddocr chạy offline cực nhanh
+try:
+    import ddddocr
+    ocr_engine = ddddocr.DdddOcr(show_ad=False)
+except Exception as e:
+    logger.warning(f"Không thể khởi tạo ddddocr ({e}). Sẽ dự phòng bằng Gemini.")
+    ocr_engine = None
+
+
+async def solve_captcha(image_bytes: bytes, base64_image: str = None, api_key: str = GEMINI_CAPTCHA_API_KEY) -> str:
     """
-    Gửi ảnh Captcha dạng Base64 lên Google Gemini API để giải mã tự động.
+    Giải mã Captcha MyDTU:
+    Ưu tiên 1: ddddocr (chạy local siêu tốc ~0.1s, không tốn quota).
+    Ưu tiên 2: Fallback qua Google Gemini nếu ddddocr chưa cài hoặc gặp lỗi.
     """
+    if ocr_engine:
+        try:
+            code = ocr_engine.classification(image_bytes)
+            code = code.replace(" ", "").replace("\n", "").strip().upper()
+            if code:
+                return code
+        except Exception as oe:
+            logger.warning(f"ddddocr đọc lỗi ({oe}), chuyển sang thử Gemini...")
+
+    if not base64_image:
+        base64_image = base64.b64encode(image_bytes).decode('utf-8')
+
+    if not api_key:
+        raise Exception("Không có ddddocr và cũng không có GEMINI_CAPTCHA_API_KEY để giải Captcha!")
+
     model_name = "gemini-3.5-flash"
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
 
@@ -56,15 +82,14 @@ async def solve_captcha_gemini(base64_image: str, api_key: str) -> str:
     }
 
     async with httpx.AsyncClient() as client:
-        import asyncio
-        max_retries = 4
+        max_retries = 3
         for attempt in range(max_retries):
             res = await client.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=20.0)
             if res.status_code == 429 and attempt < max_retries - 1:
-                logger.warning(f"Bị giới hạn API giải Captcha (429). Đợi 30s... (Lần {attempt+1}/{max_retries})")
-                await asyncio.sleep(30)
+                logger.warning(f"Bị giới hạn API Gemini (429). Đợi 10s... (Lần {attempt+1}/{max_retries})")
+                await asyncio.sleep(10)
                 continue
-            
+
             data = res.json()
             if "candidates" in data and data["candidates"]:
                 code = data["candidates"][0]["content"]["parts"][0]["text"].strip()
@@ -77,8 +102,8 @@ async def crawl_student_scores(username: str = MYDTU_USER, password: str = MYDTU
     """
     MÃ NGUỒN TỰ ĐỘNG ĐĂNG NHẬP TRƯỜNG DUY TÂN (MYDTU) & QUÉT BẢNG ĐIỂM SỐ CỤ THỂ.
     """
-    if not username or not password or not gemini_key:
-        logger.error("Vui lòng cấu hình MYDTU_USER, MYDTU_PASS và GEMINI_API_KEY trong tệp .env!")
+    if not username or not password:
+        logger.error("Vui lòng cấu hình MYDTU_USER và MYDTU_PASS trong tệp .env!")
         return None
 
     logger.info("=== BẮT ĐẦU QUY TRÌNH ĐĂNG NHẬP MYDTU VÀ QUÉT ĐIỂM SỐ ===")
@@ -99,10 +124,10 @@ async def crawl_student_scores(username: str = MYDTU_USER, password: str = MYDTU
             # Ẩn quảng cáo
             await page.add_style_tag(content=".darkness, #popout, #adbox { display: none !important; }")
 
-            # 2. Thực hiện đăng nhập (thử 3 lần nếu sai Captcha)
+            # 2. Thực hiện đăng nhập (thử tối đa 4 lần nếu sai Captcha)
             logged_in = False
-            for attempt in range(1, 4):
-                logger.info(f"-> Thử đăng nhập lần {attempt}/3...")
+            for attempt in range(1, 5):
+                logger.info(f"-> Thử đăng nhập lần {attempt}/4...")
 
                 await page.fill("input#txtUser", username)
                 await page.fill("input#txtPass", password)
@@ -113,13 +138,12 @@ async def crawl_student_scores(username: str = MYDTU_USER, password: str = MYDTU
                     break
 
                 captcha_bytes = await captcha_el.screenshot()
-                base64_img = base64.b64encode(captcha_bytes).decode('utf-8')
 
                 try:
-                    captcha_code = await solve_captcha_gemini(base64_img, gemini_key)
-                    logger.info(f"   AI giải Captcha thành công: {captcha_code}")
+                    captcha_code = await solve_captcha(image_bytes=captcha_bytes, api_key=gemini_key)
+                    logger.info(f"   Giải Captcha thành công: {captcha_code}")
                 except Exception as ge:
-                    logger.warning(f"   AI giải Captcha thất bại: {ge}")
+                    logger.warning(f"   Giải Captcha thất bại: {ge}")
                     await page.reload(wait_until="load")
                     continue
 
@@ -217,8 +241,8 @@ async def crawl_new_announcements(username: str = MYDTU_USER, password: str = MY
     from bs4 import BeautifulSoup
     from urllib.parse import urlparse, parse_qs
     
-    if not username or not password or not gemini_key:
-        logger.error("Vui lòng cấu hình MYDTU_USER, MYDTU_PASS và GEMINI_API_KEY trong tệp .env!")
+    if not username or not password:
+        logger.error("Vui lòng cấu hình MYDTU_USER và MYDTU_PASS trong tệp .env!")
         return None
 
     logger.info("=== BẮT ĐẦU QUY TRÌNH ĐĂNG NHẬP MYDTU & QUÉT THÔNG BÁO ===")
@@ -240,7 +264,7 @@ async def crawl_new_announcements(username: str = MYDTU_USER, password: str = MY
             await page.add_style_tag(content=".darkness, #popout, #adbox { display: none !important; }")
 
             logged_in = False
-            for attempt in range(1, 4):
+            for attempt in range(1, 5):
                 await page.fill("input#txtUser", username)
                 await page.fill("input#txtPass", password)
 
@@ -249,10 +273,9 @@ async def crawl_new_announcements(username: str = MYDTU_USER, password: str = MY
                     break
 
                 captcha_bytes = await captcha_el.screenshot()
-                base64_img = base64.b64encode(captcha_bytes).decode('utf-8')
 
                 try:
-                    captcha_code = await solve_captcha_gemini(base64_img, gemini_key)
+                    captcha_code = await solve_captcha(image_bytes=captcha_bytes, api_key=gemini_key)
                 except Exception:
                     await page.reload(wait_until="load")
                     continue

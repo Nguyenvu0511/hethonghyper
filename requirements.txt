@@ -5,3 +5,5 @@ python-dotenv==1.0.1
 
 playwright
 beautifulsoup4
+ddddocr
+httpx

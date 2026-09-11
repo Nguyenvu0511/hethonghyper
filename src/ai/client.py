@@ -58,7 +58,7 @@ class AIClient:
             return data["choices"][0]["message"]["content"]
 
     def _generate_gemini_text(self, prompt, is_json=False):
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={GEMINI_API_KEY}"
         payload = {
             "contents": [{"parts": [{"text": prompt}]}]
         }
@@ -115,7 +115,7 @@ class AIClient:
         with open(image_path, "rb") as f:
             base64_image = base64.b64encode(f.read()).decode('utf-8')
             
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={GEMINI_API_KEY}"
         payload = {
             "contents": [{
                 "parts": [

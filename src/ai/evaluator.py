@@ -1,27 +1,8 @@
 import os
 import logging
-import google.generativeai as genai
-from dotenv import load_dotenv
+from src.ai.client import ai_client
 
 logger = logging.getLogger(__name__)
-
-# Load API key
-load_dotenv()
-load_dotenv(os.path.join(os.path.dirname(__file__), "../..", "API_KEYS.txt"))
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-else:
-    logger.warning("GEMINI_API_KEY is not set. Evaluator will not work.")
-
-# Khởi tạo mô hình
-# Sử dụng gemini-3.5-flash (phiên bản ổn định mới nhất được hỗ trợ)
-try:
-    model = genai.GenerativeModel('gemini-3.5-flash')
-except Exception as e:
-    logger.error(f"Failed to initialize GenerativeModel: {e}")
-    model = None
 
 def evaluate_text_report(task_category, text_content):
     """
@@ -29,9 +10,6 @@ def evaluate_text_report(task_category, text_content):
     Trả về (status, feedback_message)
     status: 'completed' hoặc 'failed'
     """
-    if not model:
-        return 'failed', "AI chưa được cấu hình đúng cách."
-        
     prompt = f"""
     Bạn là một Người Thầy Ảo khắt khe, đang giám sát quá trình tự rèn luyện của một sinh viên (Thân - Tâm - Trí).
     Sinh viên vừa nộp báo cáo cho nhiệm vụ thuộc danh mục: '{task_category}'.
@@ -48,8 +26,7 @@ def evaluate_text_report(task_category, text_content):
     """
     
     try:
-        response = model.generate_content(prompt)
-        reply = response.text.strip()
+        reply = ai_client.generate_text(prompt).strip()
         
         status = 'completed' if reply.startswith('[PASS]') else 'failed'
         # Xóa tiền tố [PASS]/[FAIL] để lấy nhận xét
@@ -57,16 +34,13 @@ def evaluate_text_report(task_category, text_content):
         
         return status, feedback
     except Exception as e:
-        logger.error(f"Lỗi khi gọi Gemini API: {e}")
+        logger.error(f"Lỗi khi gọi AI API: {e}")
         return 'failed', f"Đã có lỗi xảy ra khi chấm bài: {e}"
 
 def evaluate_image_report(task_category, image_path):
     """
     Sử dụng Vision AI để đánh giá ảnh nộp (bài tập Toán, ảnh tập thể dục, điểm danh sáng).
     """
-    if not model:
-        return 'failed', "AI chưa được cấu hình đúng cách."
-        
     prompt = f"""
     Bạn là một Người Thầy Ảo khắt khe.
     Sinh viên vừa nộp một BỨC ẢNH để chứng minh đã hoàn thành nhiệm vụ thuộc danh mục: '{task_category}'.
@@ -79,22 +53,13 @@ def evaluate_image_report(task_category, image_path):
     """
     
     try:
-        # Sử dụng raw bytes để tránh lỗi thư viện PIL
-        with open(image_path, 'rb') as f:
-            image_bytes = f.read()
-            
-        img_data = {
-            'mime_type': 'image/jpeg',
-            'data': image_bytes
-        }
-        
-        response = model.generate_content([prompt, img_data])
-        reply = response.text.strip()
+        reply = ai_client.generate_vision(prompt, image_path).strip()
         
         status = 'completed' if reply.startswith('[PASS]') else 'failed'
         feedback = reply.replace('[PASS]', '').replace('[FAIL]', '').strip()
         
         return status, feedback
     except Exception as e:
-        logger.error(f"Lỗi xử lý ảnh với Gemini: {e}")
+        logger.error(f"Lỗi xử lý ảnh với AI: {e}")
         return 'failed', f"Lỗi đọc ảnh: {e}"
+

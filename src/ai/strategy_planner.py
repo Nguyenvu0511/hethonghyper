@@ -1,6 +1,5 @@
 import logging
-import google.generativeai as genai
-from src.ai.evaluator import model
+from src.ai.client import ai_client
 
 logger = logging.getLogger(__name__)
 
@@ -8,9 +7,6 @@ def generate_aa_strategy(syllabus_text):
     """
     Phân tích đề cương môn học (Syllabus) để sinh ra lộ trình lấy điểm A/A+.
     """
-    if not model:
-        return "AI chưa được cấu hình. Không thể phân tích đề cương."
-        
     prompt = f"""
     Bạn là một Chiến Lược Gia Học Tập cực kỳ xuất sắc.
     Sinh viên vừa cung cấp cho bạn một đề cương môn học (Syllabus). Mục tiêu của sinh viên là lấy điểm A hoặc A+ (trên 8.5 hoặc 9.0) cho môn này.
@@ -28,8 +24,7 @@ def generate_aa_strategy(syllabus_text):
     """
     
     try:
-        response = model.generate_content(prompt)
-        return response.text
+        return ai_client.generate_text(prompt)
     except Exception as e:
         logger.error(f"Lỗi khi sinh chiến lược A/A+: {e}")
         return f"Lỗi xử lý đề cương: {e}"
@@ -38,9 +33,6 @@ def generate_daily_quiz(subject_name):
     """
     Sinh bài tập nhỏ (Quiz) hằng ngày để 'Xóa mù chữ' cho các môn yếu.
     """
-    if not model:
-        return "AI chưa được cấu hình. Không thể ra bài tập."
-        
     prompt = f"""
     Bạn là một Gia Sư khắt khe nhưng cực kỳ tâm huyết.
     Học sinh của bạn đang bị hổng kiến thức môn "{subject_name}" ở bậc Đại học.
@@ -52,8 +44,7 @@ def generate_daily_quiz(subject_name):
     """
     
     try:
-        response = model.generate_content(prompt)
-        return response.text
+        return ai_client.generate_text(prompt)
     except Exception as e:
         logger.error(f"Lỗi khi sinh Quiz môn {subject_name}: {e}")
         return f"Lỗi ra đề: {e}"
@@ -62,9 +53,6 @@ def generate_academic_advice(records_text, target="Bằng Đỏ"):
     """
     Phân tích bảng điểm và đưa ra lời khuyên "Báo cáo Sát thủ" dựa trên mục tiêu Bằng Đỏ.
     """
-    if not model:
-        return "AI chưa được cấu hình."
-        
     prompt = f"""
     Bạn là Cố Vấn Học Tập tàn nhẫn nhưng chân thành. 
     Học sinh của bạn có mục tiêu đạt được "{target}" (GPA >= 3.2 hoặc 3.6).
@@ -96,22 +84,24 @@ def generate_academic_advice(records_text, target="Bằng Đỏ"):
     max_retries = 4
     for attempt in range(max_retries):
         try:
-            # force response mime type to application/json
-            response = model.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(response_mime_type="application/json")
-            )
-            # Parse JSON
-            result = json.loads(response.text)
+            response_text = ai_client.generate_text(prompt, is_json=True)
+            # Remove markdown json code block if AI outputs it despite instructions
+            if response_text.startswith("```json"):
+                response_text = response_text[7:]
+            if response_text.endswith("```"):
+                response_text = response_text[:-3]
+            response_text = response_text.strip()
+            
+            result = json.loads(response_text)
             return result
         except json.JSONDecodeError as e:
-            logger.error(f"Lỗi parse JSON từ AI: {e}. Raw text: {response.text}")
+            logger.error(f"Lỗi parse JSON từ AI: {e}. Raw text: {response_text}")
             if attempt == max_retries - 1:
                 return {"advice": "Lỗi định dạng phản hồi từ AI.", "roadmap": [], "daily_tasks": []}
         except Exception as e:
             if "429" in str(e) and attempt < max_retries - 1:
-                logger.warning(f"Bị giới hạn API (Rate limit 429). Thử lại sau 30 giây... (Lần {attempt+1}/{max_retries})")
-                time.sleep(30)
+                logger.warning(f"Bị giới hạn API (Rate limit 429). Thử lại sau 15 giây... (Lần {attempt+1}/{max_retries})")
+                time.sleep(15)
                 continue
             logger.error(f"Lỗi khi sinh Academic Advice: {e}")
             return {"advice": f"Lỗi phân tích: {e}", "roadmap": [], "daily_tasks": []}
@@ -120,9 +110,6 @@ def summarize_announcement(html_content):
     """
     Tóm tắt nội dung thông báo từ MyDTU.
     """
-    if not model:
-        return "AI chưa được cấu hình."
-        
     prompt = f"""
     Dưới đây là mã HTML/text của một thông báo từ trường đại học:
     "{html_content}"
@@ -140,8 +127,7 @@ def summarize_announcement(html_content):
     max_retries = 3
     for attempt in range(max_retries):
         try:
-            response = model.generate_content(prompt)
-            return response.text
+            return ai_client.generate_text(prompt)
         except Exception as e:
             if "429" in str(e) and attempt < max_retries - 1:
                 time.sleep(15)

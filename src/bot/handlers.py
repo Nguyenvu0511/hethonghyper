@@ -76,21 +76,21 @@ from src.ai.strategy_planner import generate_academic_advice, summarize_announce
 
 @router.message(Command("check_news"))
 async def command_check_news_handler(message: Message, bot: Bot) -> None:
-    """Xử lý lệnh /check_news, quét thông báo MyDTU thủ công"""
-    msg = await message.answer("🔍 Đang truy cập MyDTU để săn thông báo mới... (sẽ mất khoảng 30s-1p)")
+    """Xử lý lệnh /check_news, quét 3 thông báo mới nhất từ MyDTU thủ công"""
+    msg = await message.answer("🔍 Đang truy cập MyDTU để lấy 3 thông báo mới nhất... (sẽ mất khoảng 30s-1p)")
     
     try:
-        new_items = await crawl_new_announcements()
+        new_items = await crawl_new_announcements(fetch_top_3=True)
         
         if new_items is None:
             await msg.edit_text("❌ Lỗi: Không thể truy cập MyDTU hoặc giải Captcha thất bại. Vui lòng thử lại sau.")
             return
             
         if not new_items:
-            await msg.edit_text("✅ Trường hiện tại không có thông báo nào mới (hoặc cậu đã đọc hết rồi)!")
+            await msg.edit_text("✅ Trường hiện tại không có thông báo nào!")
             return
             
-        await msg.edit_text(f"🚨 **PHÁT HIỆN {len(new_items)} THÔNG BÁO MỚI** 🚨\nĐang tiến hành phân tích nội dung...")
+        await msg.edit_text(f"🚨 **PHÁT HIỆN {len(new_items)} THÔNG BÁO MỚI NHẤT** 🚨\nĐang tiến hành phân tích nội dung...")
         
         telegram_id = str(message.from_user.id)
         from src.database.db_manager import db
@@ -104,6 +104,7 @@ async def command_check_news_handler(message: Message, bot: Bot) -> None:
             
             try:
                 await bot.send_message(telegram_id, announcement_msg, parse_mode="Markdown")
+                # Đánh dấu đã đọc để cronjob không quét lại nữa
                 db.mark_announcement_seen(item['id'], item['title'])
                 await asyncio.sleep(1)
             except Exception as e:

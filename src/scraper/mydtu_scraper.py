@@ -254,10 +254,11 @@ async def crawl_student_scores(username: str = MYDTU_USER, password: str = MYDTU
             await context.close()
             await browser.close()
 
-async def crawl_new_announcements(username: str = MYDTU_USER, password: str = MYDTU_PASS, gemini_key: str = GEMINI_CAPTCHA_API_KEY):
+async def crawl_new_announcements(username: str = MYDTU_USER, password: str = MYDTU_PASS, gemini_key: str = GEMINI_CAPTCHA_API_KEY, fetch_top_3: bool = False):
     """
-    Quét thông báo mới (có icon Mới) từ MyDTU.
-    Trả về list dictionary: [{'id': '573', 'title': '...', 'content': '...', 'url': '...'}]
+    Quét thông báo từ MyDTU.
+    Nếu fetch_top_3 = True: Bỏ qua kiểm tra tin "Mới", lấy đúng 3 tin trên cùng.
+    Nếu False: Lấy tối đa 5 tin có gắn nhãn "Mới" (icon-new.gif) và chưa đọc.
     """
     from bs4 import BeautifulSoup
     from urllib.parse import urlparse, parse_qs
@@ -331,7 +332,9 @@ async def crawl_new_announcements(username: str = MYDTU_USER, password: str = MY
             from src.database.db_manager import db
             
             for h3 in h3_tags:
-                if h3.find('img', src="../../../images/icon-new.gif"):
+                is_new = h3.find('img', src="../../../images/icon-new.gif") is not None
+                
+                if fetch_top_3 or is_new:
                     a_tag = h3.find('a')
                     if a_tag and 'href' in a_tag.attrs:
                         href = a_tag['href']
@@ -343,12 +346,19 @@ async def crawl_new_announcements(username: str = MYDTU_USER, password: str = MY
                             title = a_tag.text.strip()
                             
                             # Check database
-                            if not db.is_announcement_seen(idann):
-                                # Limit to max 5 new announcements per crawl to avoid spamming/taking too long
-                                if len(new_items) >= 5:
+                            should_fetch = False
+                            if fetch_top_3:
+                                if len(new_items) >= 3:
                                     break
-                                    
-                                logger.info(f"Phát hiện thông báo mới: {title} (ID: {idann})")
+                                should_fetch = True
+                            else:
+                                if not db.is_announcement_seen(idann):
+                                    if len(new_items) >= 5:
+                                        break
+                                    should_fetch = True
+                            
+                            if should_fetch:
+                                logger.info(f"Phát hiện thông báo: {title} (ID: {idann})")
                                 
                                 # Lấy nội dung chi tiết
                                 detail_url = "https://mydtu.duytan.edu.vn/sites/" + href

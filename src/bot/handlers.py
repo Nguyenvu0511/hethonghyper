@@ -48,17 +48,29 @@ async def command_status_handler(message: Message) -> None:
             title_safe = html.escape(title)
             cat_safe = html.escape(category)
             desc_safe = html.escape(description)
-            if task_id in completed_task_ids:
-                response += f"✅ <s>[{cat_safe}] {title_safe}</s>\n"
-            else:
-                response += f"📌 <b>[{cat_safe}]</b> {title_safe}\n"
-            response += f"   - Yêu cầu: <i>{desc_safe}</i>\n"
-            if target_time:
-                response += f"   - Deadline: {target_time}\n"
-            response += "\n"
             
-        response += "💡 Nhớ gửi ảnh bài tập hoặc tóm tắt vào đây để tớ chấm điểm nhé!"
-        await message.answer(response, parse_mode="HTML")
+            task_text = ""
+            if task_id in completed_task_ids:
+                task_text += f"✅ <s>[{cat_safe}] {title_safe}</s>\n"
+            else:
+                task_text += f"📌 <b>[{cat_safe}]</b> {title_safe}\n"
+            task_text += f"   - Yêu cầu: <i>{desc_safe}</i>\n"
+            if target_time:
+                task_text += f"   - Deadline: {target_time}\n"
+            task_text += "\n"
+            
+            if len(response) + len(task_text) > 3800:
+                await message.answer(response, parse_mode="HTML")
+                response = ""
+            response += task_text
+            
+        if response:
+            response += "💡 Nhớ gửi ảnh bài tập hoặc tóm tắt vào đây để tớ chấm điểm nhé!"
+            if len(response) > 4000:
+                await message.answer(response[:3800], parse_mode="HTML")
+                await message.answer(response[3800:], parse_mode="HTML")
+            else:
+                await message.answer(response, parse_mode="HTML")
     except Exception as e:
         import traceback
         error_msg = traceback.format_exc()
@@ -210,14 +222,26 @@ async def command_tasks_handler(message: Message) -> None:
             task_id, category, title, description, target_time = t
             title_safe = html.escape(title)
             desc_safe = html.escape(description)
+            
+            task_text = ""
             if task_id in completed_task_ids:
-                res += f"✅ <s><b>ID: {task_id}</b> | {target_time} - {title_safe}</s>\n"
+                task_text += f"✅ <s><b>ID: {task_id}</b> | {target_time} - {title_safe}</s>\n"
             else:
-                res += f"📌 <b>ID: {task_id}</b> | {target_time} - {title_safe}\n"
-            res += f"   <i>{desc_safe}</i>\n"
+                task_text += f"📌 <b>ID: {task_id}</b> | {target_time} - {title_safe}\n"
+            task_text += f"   <i>{desc_safe}</i>\n"
+            
+            if len(res) + len(task_text) > 3800:
+                await message.answer(res, parse_mode="HTML")
+                res = ""
+            res += task_text
         
-        res += "\n💡 Để đánh dấu hoàn thành, hãy gõ lệnh: <code>/done &lt;ID_Nhiệm_vụ&gt;</code>"
-        await message.answer(res, parse_mode="HTML")
+        if res:
+            res += "\n💡 Để đánh dấu hoàn thành, hãy gõ lệnh: <code>/done &lt;ID_Nhiệm_vụ&gt;</code>"
+            if len(res) > 4000:
+                await message.answer(res[:3800], parse_mode="HTML")
+                await message.answer(res[3800:], parse_mode="HTML")
+            else:
+                await message.answer(res, parse_mode="HTML")
     except Exception as e:
         import traceback
         error_msg = traceback.format_exc()

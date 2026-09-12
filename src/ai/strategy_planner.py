@@ -94,7 +94,7 @@ def generate_academic_advice(records_text, target="Bằng Đỏ"):
             else:
                 raise json.JSONDecodeError("Không tìm thấy JSON", response_text, 0)
             
-            result = json.loads(response_text)
+            result = json.loads(response_text, strict=False)
             return result
         except json.JSONDecodeError as e:
             logger.error(f"Lỗi parse JSON từ AI: {e}. Raw text: {response_text}")

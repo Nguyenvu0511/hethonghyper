@@ -40,20 +40,24 @@ async def command_status_handler(message: Message) -> None:
         
     completed_task_ids = db.get_completed_tasks_today(user_id)
     
-    response = "📋 **NHIỆM VỤ HÔM NAY:**\n\n"
+    response = "📋 <b>NHIỆM VỤ HÔM NAY:</b>\n\n"
+    import html
     for t in tasks:
         task_id, category, title, description, target_time = t
+        title_safe = html.escape(title)
+        cat_safe = html.escape(category)
+        desc_safe = html.escape(description)
         if task_id in completed_task_ids:
-            response += f"✅ ~~[{category}] {title}~~\n"
+            response += f"✅ <s>[{cat_safe}] {title_safe}</s>\n"
         else:
-            response += f"🔹 [{category}] {title}\n"
-        response += f"   - Yêu cầu: {description}\n"
+            response += f"📌 <b>[{cat_safe}]</b> {title_safe}\n"
+        response += f"   - Yêu cầu: <i>{desc_safe}</i>\n"
         if target_time:
             response += f"   - Deadline: {target_time}\n"
         response += "\n"
         
-    response += "Nhớ gửi ảnh hoặc tóm tắt vào đây để tớ chấm điểm nhé. Không làm thì Pi-hole sẽ trảm Internet của cậu!"
-    await message.answer(response, parse_mode="Markdown")
+    response += "💡 Nhớ gửi ảnh bài tập hoặc tóm tắt vào đây để tớ chấm điểm nhé!"
+    await message.answer(response, parse_mode="HTML")
 
 from src.ai.evaluator import evaluate_text_report, evaluate_image_report
 from src.ai.strategy_planner import generate_daily_quiz

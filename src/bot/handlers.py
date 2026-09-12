@@ -100,10 +100,11 @@ async def command_check_news_handler(message: Message, bot: Bot) -> None:
         
         for item in new_items:
             summary = summarize_announcement(item['content'])
-            announcement_msg = f"📌 **{item['title']}**\n\n{summary}\n\nChi tiết: [Link MyDTU]({item['url']})"
+            safe_summary = summary.replace('<', '&lt;').replace('>', '&gt;')
+            announcement_msg = f"📌 <b>{item['title']}</b>\n\n{safe_summary}\n\nChi tiết: <a href='{item['url']}'>Link MyDTU</a>"
             
             try:
-                await bot.send_message(telegram_id, announcement_msg, parse_mode="Markdown")
+                await bot.send_message(telegram_id, announcement_msg, parse_mode="HTML")
                 # Đánh dấu đã đọc để cronjob không quét lại nữa
                 db.mark_announcement_seen(item['id'], item['title'])
                 await asyncio.sleep(1)

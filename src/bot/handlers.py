@@ -42,35 +42,19 @@ async def command_status_handler(message: Message) -> None:
             
         completed_task_ids = db.get_completed_tasks_today(user_id)
         
-        response = "📋 <b>NHIỆM VỤ HÔM NAY:</b>\n\n"
-        for t in tasks:
-            task_id, category, title, description, target_time = t
-            title_safe = html.escape(title)
-            cat_safe = html.escape(category)
-            desc_safe = html.escape(description)
-            
-            task_text = ""
-            if task_id in completed_task_ids:
-                task_text += f"✅ <s>[{cat_safe}] {title_safe}</s>\n"
-            else:
-                task_text += f"📌 <b>[{cat_safe}]</b> {title_safe}\n"
-            task_text += f"   - Yêu cầu: <i>{desc_safe}</i>\n"
-            if target_time:
-                task_text += f"   - Deadline: {target_time}\n"
-            task_text += "\n"
-            
-            if len(response) + len(task_text) > 3800:
-                await message.answer(response, parse_mode="HTML")
-                response = ""
-            response += task_text
-            
-        if response:
-            response += "💡 Nhớ gửi ảnh bài tập hoặc tóm tắt vào đây để tớ chấm điểm nhé!"
-            if len(response) > 4000:
-                await message.answer(response[:3800], parse_mode="HTML")
-                await message.answer(response[3800:], parse_mode="HTML")
-            else:
-                await message.answer(response, parse_mode="HTML")
+        from src.utils.excel_generator import generate_tasks_excel
+        from aiogram.types import FSInputFile
+        
+        file_path = f"data/status_{telegram_id}.xlsx"
+        generate_tasks_excel(tasks, completed_task_ids, file_path)
+        
+        excel_doc = FSInputFile(file_path, filename="Nhiem_vu_hom_nay.xlsx")
+        
+        caption = "📋 <b>NHIỆM VỤ HÔM NAY CỦA CẬU:</b>\n\n💡 Chi tiết đã được tớ trang trí trong file Excel đính kèm. Nhớ mở ra xem và gửi ảnh bài tập vào đây để tớ chấm điểm nhé!"
+        await message.answer_document(excel_doc, caption=caption, parse_mode="HTML")
+        
+        if os.path.exists(file_path):
+            os.remove(file_path)
     except Exception as e:
         import traceback
         error_msg = traceback.format_exc()
@@ -217,31 +201,19 @@ async def command_tasks_handler(message: Message) -> None:
             
         completed_task_ids = db.get_completed_tasks_today(user_id)
         
-        res = "📋 <b>DANH SÁCH NHIỆM VỤ HÀNG NGÀY CỦA CẬU:</b>\n\n"
-        for t in tasks:
-            task_id, category, title, description, target_time = t
-            title_safe = html.escape(title)
-            desc_safe = html.escape(description)
-            
-            task_text = ""
-            if task_id in completed_task_ids:
-                task_text += f"✅ <s><b>ID: {task_id}</b> | {target_time} - {title_safe}</s>\n"
-            else:
-                task_text += f"📌 <b>ID: {task_id}</b> | {target_time} - {title_safe}\n"
-            task_text += f"   <i>{desc_safe}</i>\n"
-            
-            if len(res) + len(task_text) > 3800:
-                await message.answer(res, parse_mode="HTML")
-                res = ""
-            res += task_text
+        from src.utils.excel_generator import generate_tasks_excel
+        from aiogram.types import FSInputFile
         
-        if res:
-            res += "\n💡 Để đánh dấu hoàn thành, hãy gõ lệnh: <code>/done &lt;ID_Nhiệm_vụ&gt;</code>"
-            if len(res) > 4000:
-                await message.answer(res[:3800], parse_mode="HTML")
-                await message.answer(res[3800:], parse_mode="HTML")
-            else:
-                await message.answer(res, parse_mode="HTML")
+        file_path = f"data/tasks_{telegram_id}.xlsx"
+        generate_tasks_excel(tasks, completed_task_ids, file_path)
+        
+        excel_doc = FSInputFile(file_path, filename="Danh_sach_nhiem_vu.xlsx")
+        
+        caption = "📋 <b>BẢNG NHIỆM VỤ HÀNG NGÀY CỦA CẬU:</b>\n\n💡 Tớ đã tổng hợp và trang trí siêu đẹp vào file Excel bên dưới nhé. Cậu mở ra xem và nếu muốn hoàn thành thì gõ lệnh <code>/done &lt;ID_Nhiệm_vụ&gt;</code> nha!"
+        await message.answer_document(excel_doc, caption=caption, parse_mode="HTML")
+        
+        if os.path.exists(file_path):
+            os.remove(file_path)
     except Exception as e:
         import traceback
         error_msg = traceback.format_exc()

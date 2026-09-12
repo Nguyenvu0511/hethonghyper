@@ -68,9 +68,9 @@ def generate_academic_advice(records_text, target="Bằng Đỏ"):
     5. Trích xuất danh sách các môn học cụ thể cần đưa vào LỘ TRÌNH học lại/cải thiện.
     6. Đề xuất các NHIỆM VỤ HÀNG NGÀY (daily tasks) cụ thể.
     
-    BẮT BUỘC TRẢ VỀ CHÍNH XÁC ĐỊNH DẠNG JSON (Không chứa Markdown ```json, chỉ chuỗi JSON thô), với cấu trúc sau:
+    BẮT BUỘC TRẢ VỀ CHÍNH XÁC ĐỊNH DẠNG JSON, KHÔNG CÓ COMMENTS (//), VÀ PHẢI ESCAPE DẤU NGOẶC KÉP (\") BÊN TRONG CHUỖI, VỚI CẤU TRÚC SAU:
     {{
-      "advice": "Văn bản nhận xét cực kỳ dài và chi tiết. Viết giống hệt một bài báo cáo phân tích sâu sắc, chia làm 3 phần rõ rệt: [CẢNH BÁO ĐỎ], [CHIẾN LƯỢC CẢI THIỆN] (phân tích từng môn), [LỜI KHUYÊN TỔNG THỂ]. Dùng \\n\\n để tạo các đoạn văn cách nhau dễ nhìn.",
+      "advice": "Văn bản nhận xét cực kỳ dài và chi tiết. Viết giống hệt một bài báo cáo phân tích sâu sắc, chia làm 3 phần rõ rệt: [CẢNH BÁO ĐỎ], [CHIẾN LƯỢC CẢI THIỆN] (phân tích từng môn), [LỜI KHUYÊN TỔNG THỂ]. Dùng \\n\\n để tạo các đoạn văn cách nhau dễ nhìn. Tuyệt đối không dùng dấu ngoặc kép chưa escape bên trong đoạn văn này.",
       "roadmap": [
          {{"subject_name": "Tên môn học", "target_level": "Mục tiêu (ví dụ: B+ hoặc A)", "end_date": "YYYY-MM-DD"}}
       ],
@@ -99,7 +99,7 @@ def generate_academic_advice(records_text, target="Bằng Đỏ"):
         except json.JSONDecodeError as e:
             logger.error(f"Lỗi parse JSON từ AI: {e}. Raw text: {response_text}")
             if attempt == max_retries - 1:
-                return {"advice": "Lỗi định dạng phản hồi từ AI.", "roadmap": [], "daily_tasks": []}
+                return {"advice": f"Lỗi định dạng phản hồi từ AI: {e}\n\nRaw text:\n{response_text[:1500]}", "roadmap": [], "daily_tasks": []}
         except Exception as e:
             if attempt < max_retries - 1:
                 logger.warning(f"Lỗi API (lần {attempt+1}): {e}. Thử lại sau 5s...")

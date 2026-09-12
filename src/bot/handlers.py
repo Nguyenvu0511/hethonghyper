@@ -283,13 +283,20 @@ async def command_scores_handler(message: Message) -> None:
         for item in scores:
             diem_chu = item.get("diem_chu", "Chưa có")
             ten_mon = html.escape(item['ten_mon'])
-            text = f"▪️ {ten_mon} ({item['so_tin_chi']} TC): {item['diem_tong_ket']} ({diem_chu})"
-            if diem_chu == "F":
-                failed.append(text)
-            elif diem_chu == "Chưa có":
-                studying.append(text)
-            else:
+            
+            # Cảnh báo môn học điểm thấp (kéo tụt GPA)
+            if diem_chu in ["D", "D+", "C-"]:
+                text = f"🔴 <b>{ten_mon} ({item['so_tin_chi']} TC): {item['diem_tong_ket']} ({diem_chu})</b> <i>(Cảnh báo kéo tụt GPA, cần cân nhắc học cải thiện!)</i>"
                 passed.append(text)
+            else:
+                text = f"▪️ {ten_mon} ({item['so_tin_chi']} TC): {item['diem_tong_ket']} ({diem_chu})"
+                
+                if diem_chu == "F":
+                    failed.append(text)
+                elif diem_chu == "Chưa có":
+                    studying.append(text)
+                else:
+                    passed.append(text)
                 
         if failed:
             res += "❌ <b>BÁO ĐỘNG (RỚT MÔN):</b>\n" + "\n".join(failed) + "\n\n"

@@ -368,7 +368,12 @@ async def crawl_new_announcements(username: str = MYDTU_USER, password: str = MY
                                 detail_soup = BeautifulSoup(detail_html, 'html.parser')
                                 
                                 content_div = detail_soup.find('div', class_='content-thongbao')
-                                full_text = content_div.text.strip() if content_div else "Không thể tải nội dung chi tiết."
+                                if content_div:
+                                    full_text = content_div.text.strip()
+                                else:
+                                    # Fallback lấy toàn bộ text của trang và cắt ngắn bớt menu rác
+                                    body = detail_soup.find('body')
+                                    full_text = body.text.strip()[:5000] if body else detail_html[:5000]
                                 
                                 new_items.append({
                                     'id': idann,

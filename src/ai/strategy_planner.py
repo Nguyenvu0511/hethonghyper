@@ -129,8 +129,9 @@ def summarize_announcement(html_content):
         try:
             return ai_client.generate_text(prompt)
         except Exception as e:
-            if "429" in str(e) and attempt < max_retries - 1:
-                time.sleep(15)
+            if attempt < max_retries - 1:
+                logger.warning(f"Lỗi API (lần {attempt+1}): {e}. Thử lại sau 5s...")
+                time.sleep(5)
                 continue
             logger.error(f"Lỗi khi tóm tắt thông báo: {e}")
             return f"Lỗi phân tích nội dung: {e}"

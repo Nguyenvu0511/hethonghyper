@@ -13,7 +13,7 @@ load_dotenv(os.path.join(os.path.dirname(__file__), "../..", "API_KEYS.txt"))
 
 OPENAI_API_BASE = os.getenv("OPENAI_API_BASE")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-AI_MODEL_NAME = os.getenv("AI_MODEL_NAME", "deepseek/deepseek-v4-pro")
+AI_MODEL_NAME = os.getenv("AI_MODEL_NAME")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 class AIClient:
@@ -55,7 +55,13 @@ class AIClient:
             res = client.post(url, json=payload, headers=headers)
             res.raise_for_status()
             data = res.json()
-            return data["choices"][0]["message"]["content"]
+            content = data["choices"][0]["message"]["content"]
+            
+            # Loại bỏ <think>...</think> nếu có (đặc thù của dòng DeepSeek R1)
+            import re
+            content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL).strip()
+            
+            return content
 
     def _generate_gemini_text(self, prompt, is_json=False):
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={GEMINI_API_KEY}"
@@ -72,10 +78,11 @@ class AIClient:
             return data["candidates"][0]["content"]["parts"][0]["text"]
 
     def generate_vision(self, prompt, image_path):
-        if self.use_openai:
-            return self._generate_openai_vision(prompt, image_path)
-        elif self.use_gemini:
+        # Ưu tiên dùng Gemini cho ảnh vì DeepSeek R1 không có vision
+        if self.use_gemini:
             return self._generate_gemini_vision(prompt, image_path)
+        elif self.use_openai:
+            return self._generate_openai_vision(prompt, image_path)
         else:
             raise Exception("Chưa cấu hình API Key cho AI.")
 

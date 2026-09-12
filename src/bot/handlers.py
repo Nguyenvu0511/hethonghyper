@@ -1,4 +1,5 @@
 import os
+import html
 from aiogram import Router, F, Bot
 from aiogram.types import Message
 from aiogram.filters import CommandStart, Command
@@ -25,39 +26,43 @@ async def command_start_handler(message: Message) -> None:
 @router.message(Command("status"))
 async def command_status_handler(message: Message) -> None:
     """Xử lý lệnh /status, hiển thị nhiệm vụ cần làm"""
-    telegram_id = str(message.from_user.id)
-    user_id = db.get_user_id(telegram_id)
-    
-    if not user_id:
-        await message.answer("Cậu chưa đăng ký. Hãy gõ /start trước nhé.")
-        return
+    try:
+        telegram_id = str(message.from_user.id)
+        user_id = db.get_user_id(telegram_id)
         
-    tasks = db.get_daily_tasks(user_id)
-    
-    if not tasks:
-        await message.answer("Hôm nay cậu chưa có nhiệm vụ nào được giao. Hãy nghỉ ngơi hoặc tự ôn tập nhé!")
-        return
+        if not user_id:
+            await message.answer("Cậu chưa đăng ký. Hãy gõ /start trước nhé.")
+            return
+            
+        tasks = db.get_daily_tasks(user_id)
         
-    completed_task_ids = db.get_completed_tasks_today(user_id)
-    
-    response = "📋 <b>NHIỆM VỤ HÔM NAY:</b>\n\n"
-    import html
-    for t in tasks:
-        task_id, category, title, description, target_time = t
-        title_safe = html.escape(title)
-        cat_safe = html.escape(category)
-        desc_safe = html.escape(description)
-        if task_id in completed_task_ids:
-            response += f"✅ <s>[{cat_safe}] {title_safe}</s>\n"
-        else:
-            response += f"📌 <b>[{cat_safe}]</b> {title_safe}\n"
-        response += f"   - Yêu cầu: <i>{desc_safe}</i>\n"
-        if target_time:
-            response += f"   - Deadline: {target_time}\n"
-        response += "\n"
+        if not tasks:
+            await message.answer("Hôm nay cậu chưa có nhiệm vụ nào được giao. Hãy nghỉ ngơi hoặc tự ôn tập nhé!")
+            return
+            
+        completed_task_ids = db.get_completed_tasks_today(user_id)
         
-    response += "💡 Nhớ gửi ảnh bài tập hoặc tóm tắt vào đây để tớ chấm điểm nhé!"
-    await message.answer(response, parse_mode="HTML")
+        response = "📋 <b>NHIỆM VỤ HÔM NAY:</b>\n\n"
+        for t in tasks:
+            task_id, category, title, description, target_time = t
+            title_safe = html.escape(title)
+            cat_safe = html.escape(category)
+            desc_safe = html.escape(description)
+            if task_id in completed_task_ids:
+                response += f"✅ <s>[{cat_safe}] {title_safe}</s>\n"
+            else:
+                response += f"📌 <b>[{cat_safe}]</b> {title_safe}\n"
+            response += f"   - Yêu cầu: <i>{desc_safe}</i>\n"
+            if target_time:
+                response += f"   - Deadline: {target_time}\n"
+            response += "\n"
+            
+        response += "💡 Nhớ gửi ảnh bài tập hoặc tóm tắt vào đây để tớ chấm điểm nhé!"
+        await message.answer(response, parse_mode="HTML")
+    except Exception as e:
+        import traceback
+        error_msg = traceback.format_exc()
+        await message.answer(f"🚨 Lỗi hệ thống khi chạy /status:\n<pre>{html.escape(error_msg)}</pre>", parse_mode="HTML")
 
 from src.ai.evaluator import evaluate_text_report, evaluate_image_report
 from src.ai.strategy_planner import generate_daily_quiz
@@ -186,33 +191,37 @@ async def command_update_scores_handler(message: Message) -> None:
 @router.message(Command("tasks"))
 async def command_tasks_handler(message: Message) -> None:
     """Liệt kê nhiệm vụ hàng ngày của user"""
-    telegram_id = str(message.from_user.id)
-    user_id = db.get_user_id(telegram_id)
-    if not user_id:
-        await message.answer("Cậu chưa đăng ký. Hãy gõ /start.")
-        return
+    try:
+        telegram_id = str(message.from_user.id)
+        user_id = db.get_user_id(telegram_id)
+        if not user_id:
+            await message.answer("Cậu chưa đăng ký. Hãy gõ /start.")
+            return
+            
+        tasks = db.get_daily_tasks(user_id)
+        if not tasks:
+            await message.answer("Cậu chưa có nhiệm vụ nào. Hãy gõ /update_scores để AI lên lịch trình nhé!")
+            return
+            
+        completed_task_ids = db.get_completed_tasks_today(user_id)
         
-    tasks = db.get_daily_tasks(user_id)
-    if not tasks:
-        await message.answer("Cậu chưa có nhiệm vụ nào. Hãy gõ /update_scores để AI lên lịch trình nhé!")
-        return
+        res = "📋 <b>DANH SÁCH NHIỆM VỤ HÀNG NGÀY CỦA CẬU:</b>\n\n"
+        for t in tasks:
+            task_id, category, title, description, target_time = t
+            title_safe = html.escape(title)
+            desc_safe = html.escape(description)
+            if task_id in completed_task_ids:
+                res += f"✅ <s><b>ID: {task_id}</b> | {target_time} - {title_safe}</s>\n"
+            else:
+                res += f"📌 <b>ID: {task_id}</b> | {target_time} - {title_safe}\n"
+            res += f"   <i>{desc_safe}</i>\n"
         
-    completed_task_ids = db.get_completed_tasks_today(user_id)
-    
-    res = "📋 <b>DANH SÁCH NHIỆM VỤ HÀNG NGÀY CỦA CẬU:</b>\n\n"
-    import html
-    for t in tasks:
-        task_id, category, title, description, target_time = t
-        title_safe = html.escape(title)
-        desc_safe = html.escape(description)
-        if task_id in completed_task_ids:
-            res += f"✅ <s><b>ID: {task_id}</b> | {target_time} - {title_safe}</s>\n"
-        else:
-            res += f"📌 <b>ID: {task_id}</b> | {target_time} - {title_safe}\n"
-        res += f"   <i>{desc_safe}</i>\n"
-    
-    res += "\n💡 Để đánh dấu hoàn thành, hãy gõ lệnh: <code>/done &lt;ID_Nhiệm_vụ&gt;</code>"
-    await message.answer(res, parse_mode="HTML")
+        res += "\n💡 Để đánh dấu hoàn thành, hãy gõ lệnh: <code>/done &lt;ID_Nhiệm_vụ&gt;</code>"
+        await message.answer(res, parse_mode="HTML")
+    except Exception as e:
+        import traceback
+        error_msg = traceback.format_exc()
+        await message.answer(f"🚨 Lỗi hệ thống khi chạy /tasks:\n<pre>{html.escape(error_msg)}</pre>", parse_mode="HTML")
 
 @router.message(Command("done"))
 async def command_done_handler(message: Message) -> None:

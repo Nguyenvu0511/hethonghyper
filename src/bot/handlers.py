@@ -195,17 +195,20 @@ async def command_tasks_handler(message: Message) -> None:
         
     completed_task_ids = db.get_completed_tasks_today(user_id)
     
-    res = "📋 **DANH SÁCH NHIỆM VỤ HÀNG NGÀY CỦA CẬU:**\n\n"
+    res = "📋 <b>DANH SÁCH NHIỆM VỤ HÀNG NGÀY CỦA CẬU:</b>\n\n"
+    import html
     for t in tasks:
         task_id, category, title, description, target_time = t
+        title_safe = html.escape(title)
+        desc_safe = html.escape(description)
         if task_id in completed_task_ids:
-            res += f"✅ ~~**ID: {task_id}** | {target_time} - {title}~~\n"
+            res += f"✅ <s><b>ID: {task_id}</b> | {target_time} - {title_safe}</s>\n"
         else:
-            res += f"🔹 **ID: {task_id}** | {target_time} - {title}\n"
-        res += f"   _{description}_\n"
+            res += f"📌 <b>ID: {task_id}</b> | {target_time} - {title_safe}\n"
+        res += f"   <i>{desc_safe}</i>\n"
     
-    res += "\n👉 Để đánh dấu hoàn thành, hãy gõ lệnh: `/done <ID_Nhiệm_vụ>`"
-    await message.answer(res, parse_mode="Markdown")
+    res += "\n💡 Để đánh dấu hoàn thành, hãy gõ lệnh: <code>/done &lt;ID_Nhiệm_vụ&gt;</code>"
+    await message.answer(res, parse_mode="HTML")
 
 @router.message(Command("done"))
 async def command_done_handler(message: Message) -> None:

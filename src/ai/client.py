@@ -51,7 +51,7 @@ class AIClient:
         if is_json:
             payload["response_format"] = {"type": "json_object"}
             
-        with httpx.Client(timeout=60.0) as client:
+        with httpx.Client(timeout=180.0) as client:
             res = client.post(url, json=payload, headers=headers)
             res.raise_for_status()
             data = res.json()

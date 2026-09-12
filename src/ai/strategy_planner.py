@@ -85,12 +85,14 @@ def generate_academic_advice(records_text, target="Bằng Đỏ"):
     for attempt in range(max_retries):
         try:
             response_text = ai_client.generate_text(prompt, is_json=True)
-            # Remove markdown json code block if AI outputs it despite instructions
-            if response_text.startswith("```json"):
-                response_text = response_text[7:]
-            if response_text.endswith("```"):
-                response_text = response_text[:-3]
-            response_text = response_text.strip()
+            
+            # Cắt lấy đúng phần JSON (từ dấu { đầu tiên đến dấu } cuối cùng)
+            start_idx = response_text.find('{')
+            end_idx = response_text.rfind('}')
+            if start_idx != -1 and end_idx != -1 and end_idx >= start_idx:
+                response_text = response_text[start_idx:end_idx+1]
+            else:
+                raise json.JSONDecodeError("Không tìm thấy JSON", response_text, 0)
             
             result = json.loads(response_text)
             return result
@@ -99,9 +101,9 @@ def generate_academic_advice(records_text, target="Bằng Đỏ"):
             if attempt == max_retries - 1:
                 return {"advice": "Lỗi định dạng phản hồi từ AI.", "roadmap": [], "daily_tasks": []}
         except Exception as e:
-            if "429" in str(e) and attempt < max_retries - 1:
-                logger.warning(f"Bị giới hạn API (Rate limit 429). Thử lại sau 15 giây... (Lần {attempt+1}/{max_retries})")
-                time.sleep(15)
+            if attempt < max_retries - 1:
+                logger.warning(f"Lỗi API (lần {attempt+1}): {e}. Thử lại sau 5s...")
+                time.sleep(5)
                 continue
             logger.error(f"Lỗi khi sinh Academic Advice: {e}")
             return {"advice": f"Lỗi phân tích: {e}", "roadmap": [], "daily_tasks": []}

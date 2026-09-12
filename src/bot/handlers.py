@@ -157,7 +157,7 @@ async def command_update_scores_handler(message: Message) -> None:
         
         if user_id:
             # Xóa task và roadmap cũ
-            db.clear_old_academic_tasks(user_id)
+            db.clear_old_tasks_and_roadmap(user_id)
             
             # Lưu roadmap mới
             for rm in roadmap:

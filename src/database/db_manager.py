@@ -88,11 +88,11 @@ class DatabaseManager:
             conn.commit()
             return cursor.lastrowid
             
-    def clear_old_academic_tasks(self, user_id):
-        """Xóa các nhiệm vụ học thuật cũ và lộ trình cũ trước khi tạo mới"""
+    def clear_old_tasks_and_roadmap(self, user_id):
+        """Xóa tất cả nhiệm vụ cũ và lộ trình cũ trước khi tạo mới để tránh trùng lặp"""
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("DELETE FROM tasks WHERE user_id = ? AND category = 'Học thuật'", (user_id,))
+            cursor.execute("DELETE FROM tasks WHERE user_id = ?", (user_id,))
             cursor.execute("DELETE FROM subjects_tracker WHERE user_id = ?", (user_id,))
             conn.commit()
 

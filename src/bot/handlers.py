@@ -143,7 +143,8 @@ async def command_update_scores_handler(message: Message) -> None:
     await msg.edit_text("✅ Đã lấy được bảng điểm! Đang gửi cho AI phân tích lộ trình Bằng Đỏ...")
     
     # 3. Xin lời khuyên AI (Bây giờ trả về JSON)
-    ai_result = generate_academic_advice(records_text, target="Bằng Đỏ")
+    import asyncio
+    ai_result = await asyncio.to_thread(generate_academic_advice, records_text, target="Bằng Đỏ")
     
     if isinstance(ai_result, dict):
         advice = ai_result.get("advice", "Lỗi sinh lời khuyên.")
@@ -258,7 +259,8 @@ async def photo_handler(message: Message, bot: Bot) -> None:
     await bot.download_file(file.file_path, destination=file_path)
     
     # Gửi cho AI chấm điểm (Giả định task_category hiện tại là Toán)
-    status, feedback = evaluate_image_report("Bài tập", file_path)
+    import asyncio
+    status, feedback = await asyncio.to_thread(evaluate_image_report, "Bài tập", file_path)
     
     # Xóa ảnh tạm
     if os.path.exists(file_path):
@@ -343,7 +345,8 @@ async def text_handler(message: Message) -> None:
     msg = await message.answer("Đang phân tích báo cáo của cậu...")
     
     # Chấm điểm bằng AI
-    status, feedback = evaluate_text_report("Tóm tắt sách / Báo cáo chung", message.text)
+    import asyncio
+    status, feedback = await asyncio.to_thread(evaluate_text_report, "Tóm tắt sách / Báo cáo chung", message.text)
     
     await msg.edit_text(f"Kết quả: [{status.upper()}]\n\nNhận xét:\n{feedback}")
 

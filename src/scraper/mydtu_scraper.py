@@ -426,7 +426,7 @@ def extract_radscheduler_appointments(page_content: str):
                                 parts[2], parts[3] = parts[3], parts[2]
                         subj_clean = " | ".join(parts).replace("(", "").replace(")", "")
                         raw_info = f"{wd_name} ({date_str}) | {subj_clean}"
-                        items.append({"raw_info": raw_info, "start_dt": dt.isoformat()})
+                        items.append({"raw_info": raw_info, "start_dt": dt.isoformat(), "weekday": wd_name})
                     except Exception:
                         pass
         except Exception:

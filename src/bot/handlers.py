@@ -226,7 +226,10 @@ async def command_tasks_handler(message: Message) -> None:
             with open("data/last_schedule.json", "r", encoding="utf-8") as f:
                 schedule = json.load(f)
                 for item in schedule:
-                    if item.get("weekday") == today_weekday:
+                    wd = item.get("weekday")
+                    if not wd and "(" in item.get("raw_info", ""):
+                        wd = item.get("raw_info").split("(")[0].strip()
+                    if wd == today_weekday:
                         # Extract class name and time for cleaner display
                         raw_info = item.get('raw_info', '')
                         # e.g. "Chủ Nhật (13/09) | EE 301 I | Kỹ Thuật Điện Nâng Cao | 07:00-09:00"
@@ -407,7 +410,10 @@ async def command_plan_today_handler(message: Message) -> None:
             with open("data/last_schedule.json", "r", encoding="utf-8") as f:
                 schedule = json.load(f)
                 for item in schedule:
-                    if item.get("weekday") == today_weekday:
+                    wd = item.get("weekday")
+                    if not wd and "(" in item.get("raw_info", ""):
+                        wd = item.get("raw_info").split("(")[0].strip()
+                    if wd == today_weekday:
                         timetable_today += f"- {item.get('raw_info')}\n"
         
         records_text = ""
@@ -462,7 +468,11 @@ async def command_lichhoc_handler(message: Message) -> None:
     from collections import defaultdict
     days = defaultdict(list)
     for item in schedule:
-        wd = item.get("weekday", "Không rõ")
+        wd = item.get("weekday")
+        if not wd and "(" in item.get("raw_info", ""):
+            wd = item.get("raw_info").split("(")[0].strip()
+        elif not wd:
+            wd = "Không rõ"
         raw_info = item.get("raw_info", "")
         parts = [p.strip() for p in raw_info.split('|')]
         if len(parts) >= 4:

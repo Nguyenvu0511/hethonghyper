@@ -68,7 +68,10 @@ async def morning_tasks_reminder(bot: Bot):
                 with open("data/last_schedule.json", "r", encoding="utf-8") as f:
                     schedule = json.load(f)
                     for item in schedule:
-                        if item.get("weekday") == today_weekday:
+                        wd = item.get("weekday")
+                        if not wd and "(" in item.get("raw_info", ""):
+                            wd = item.get("raw_info").split("(")[0].strip()
+                        if wd == today_weekday:
                             timetable_today += f"- {item.get('raw_info')}\n"
             
             # Đọc điểm
@@ -95,7 +98,27 @@ async def morning_tasks_reminder(bot: Bot):
             completed_task_ids = db.get_completed_tasks_today(user_id)
             
             import html
-            msg_text = f"🌅 <b>CHÀO BUỔI SÁNG {html.escape(username)}!</b>\nĐây là nhiệm vụ học tập hôm nay của cậu:\n\n"
+            
+            timetable_display = ""
+            if timetable_today:
+                for line in timetable_today.split("\n"):
+                    if line.strip():
+                        parts = [p.strip() for p in line.replace("- ", "").split("|")]
+                        if len(parts) >= 4:
+                            time_str = parts[-1]
+                            subj_str = parts[-2]
+                            timetable_display += f"🏫 <b>{time_str}</b> - {subj_str}\n"
+                        else:
+                            timetable_display += f"🏫 {line}\n"
+            
+            msg_text = f"🌅 <b>CHÀO BUỔI SÁNG {html.escape(username)}!</b>\n"
+            if timetable_display:
+                msg_text += f"\n📅 <b>LỊCH HỌC TRÊN TRƯỜNG:</b>\n{timetable_display}\n"
+            else:
+                msg_text += "\n📅 <b>LỊCH HỌC TRÊN TRƯỜNG:</b>\n<i>Hôm nay không có tiết học nào trên trường.</i>\n\n"
+                
+            msg_text += "📋 <b>BẢNG NHIỆM VỤ HÀNG NGÀY CỦA CẬU:</b>\n"
+
             
             for t in tasks:
                 task_id, category, title, description, target_time = t

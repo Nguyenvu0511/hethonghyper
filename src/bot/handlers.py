@@ -396,7 +396,10 @@ async def command_plan_today_handler(message: Message) -> None:
                 db.save_task(user_id, "daily", t.get("category", "Học thuật"), t.get("title", ""), t.get("description", ""), t.get("target_time", "20:00"))
             await msg.edit_text(f"✅ Đã lên lịch trình động cho **{today_weekday}** thành công! Gõ /tasks để xem ngay.")
         else:
-            await msg.edit_text("❌ Lỗi sinh lịch trình từ AI.")
+            err = plan.get('error', 'Không có error') if plan else 'Plan is None'
+            raw = plan.get('raw_text', '') if plan else ''
+            import html
+            await msg.edit_text(f"❌ Lỗi sinh lịch trình từ AI.\nLỗi: {html.escape(err)}\nRaw: {html.escape(raw)[:1000]}", parse_mode="HTML")
             
     except Exception as e:
         import traceback

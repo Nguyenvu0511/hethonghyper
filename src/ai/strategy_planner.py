@@ -179,4 +179,4 @@ def generate_daily_plan(records_text, timetable_today, date_str):
                 time.sleep(5)
                 continue
             logger.error(f"Lỗi khi sinh Daily Plan: {e}")
-            return {"daily_tasks": []}
+            return {"error": str(e), "raw_text": response_text if 'response_text' in locals() else ""}

@@ -351,24 +351,6 @@ async def command_scores_handler(message: Message) -> None:
         await message.answer(f"❌ Lỗi khi đọc file bảng điểm: {e}")
 
 
-@router.message(F.text)
-async def text_handler(message: Message) -> None:
-    """Xử lý tin nhắn text thông thường (tóm tắt sách, tâm sự)"""
-    text = message.text.lower()
-    
-    if text.startswith("/"):
-        return # Bỏ qua các lệnh
-        
-    msg = await message.answer("Đang phân tích báo cáo của cậu...")
-    
-    # Chấm điểm bằng AI
-    import asyncio
-    status, feedback = await asyncio.to_thread(evaluate_text_report, "Tóm tắt sách / Báo cáo chung", message.text)
-    
-    await msg.edit_text(f"Kết quả: [{status.upper()}]\n\nNhận xét:\n{feedback}")
-
-
-
 @router.message(Command("plan_today"))
 async def command_plan_today_handler(message: Message) -> None:
     """Tự động lập kế hoạch HÔM NAY dựa trên lịch học hiện tại."""
@@ -421,3 +403,22 @@ async def command_plan_today_handler(message: Message) -> None:
         import html
         error_msg = traceback.format_exc()
         await msg.edit_text(f"🚨 Lỗi hệ thống:\n<pre>{html.escape(error_msg)}</pre>", parse_mode="HTML")
+
+@router.message(F.text)
+async def text_handler(message: Message) -> None:
+    """Xử lý tin nhắn text thông thường (tóm tắt sách, tâm sự)"""
+    text = message.text.lower()
+    
+    if text.startswith("/"):
+        return # Bỏ qua các lệnh
+        
+    msg = await message.answer("Đang phân tích báo cáo của cậu...")
+    
+    # Chấm điểm bằng AI
+    import asyncio
+    status, feedback = await asyncio.to_thread(evaluate_text_report, "Tóm tắt sách / Báo cáo chung", message.text)
+    
+    await msg.edit_text(f"Kết quả: [{status.upper()}]\n\nNhận xét:\n{feedback}")
+
+
+

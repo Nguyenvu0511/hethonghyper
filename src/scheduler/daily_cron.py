@@ -45,24 +45,39 @@ from src.utils.excel_generator import generate_tasks_excel
 from aiogram.types import FSInputFile
 
 async def morning_tasks_reminder(bot: Bot):
-    """Gửi danh sách nhiệm vụ lúc 6:00 sáng cho tất cả user bằng Excel"""
+    """Gửi danh sách nhiệm vụ lúc 6:00 sáng cho tất cả user"""
     users = db.get_all_users()
     for u in users:
         user_id, telegram_id, username = u
         tasks = db.get_daily_tasks(user_id)
         if tasks:
             completed_task_ids = db.get_completed_tasks_today(user_id)
-            file_path = f"data/morning_tasks_{telegram_id}.xlsx"
-            generate_tasks_excel(tasks, completed_task_ids, file_path)
             
-            msg = f"🌅 <b>CHÀO BUỔI SÁNG {username}!</b>\n\nĐây là file Excel báo cáo nhiệm vụ học tập hôm nay của cậu. Hãy tải về xem và nhớ gõ <code>/done &lt;ID&gt;</code> khi làm xong nhé! Chúc một ngày năng suất!"
-            try:
-                excel_doc = FSInputFile(file_path, filename="Nhiem_vu_buoi_sang.xlsx")
-                await bot.send_document(telegram_id, excel_doc, caption=msg, parse_mode="HTML")
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-            except Exception as e:
-                logger.error(f"Lỗi gửi morning tasks Excel: {e}")
+            import html
+            msg_text = f"🌅 <b>CHÀO BUỔI SÁNG {html.escape(username)}!</b>\nĐây là nhiệm vụ học tập hôm nay của cậu:\n\n"
+            
+            for t in tasks:
+                task_id, category, title, description, target_time = t
+                status_icon = "✅" if task_id in completed_task_ids else "▫️"
+                
+                task_info = f"{status_icon} <b>ID {task_id}</b> | {target_time} - {html.escape(title)}\n"
+                
+                if len(msg_text) + len(task_info) > 3500:
+                    try:
+                        await bot.send_message(telegram_id, msg_text, parse_mode="HTML")
+                    except Exception as e:
+                        logger.error(f"Lỗi gửi morning tasks 1: {e}")
+                    msg_text = ""
+                    
+                msg_text += task_info
+                
+            msg_text += "\nNhớ gõ <code>/done &lt;ID_Nhiệm_vụ&gt;</code> khi hoàn thành nhé! Chúc một ngày năng suất!"
+            
+            if msg_text:
+                try:
+                    await bot.send_message(telegram_id, msg_text, parse_mode="HTML")
+                except Exception as e:
+                    logger.error(f"Lỗi gửi morning tasks 2: {e}")
 
 async def evening_tasks_check(bot: Bot):
     """Kiểm tra tiến độ lúc 23:30 tối và gửi báo cáo tổng kết"""
@@ -72,19 +87,30 @@ async def evening_tasks_check(bot: Bot):
         tasks = db.get_daily_tasks(user_id)
         if tasks:
             completed_task_ids = db.get_completed_tasks_today(user_id)
-            file_path = f"data/evening_tasks_{telegram_id}.xlsx"
-            generate_tasks_excel(tasks, completed_task_ids, file_path)
-            
             percent = (len(completed_task_ids) / len(tasks)) * 100 if len(tasks) > 0 else 100
             
-            msg = f"🌙 <b>23:30 RỒI! BÁO CÁO TỔNG KẾT NGÀY:</b>\n\nCậu đã hoàn thành <b>{len(completed_task_ids)}/{len(tasks)}</b> nhiệm vụ (<b>{percent:.1f}%</b>).\nChi tiết trạng thái Xanh/Cam đã được tô màu trong file Excel bên dưới. Hãy kiểm điểm lại bản thân trước khi đi ngủ nhé!"
-            try:
-                excel_doc = FSInputFile(file_path, filename="Bao_cao_cuoi_ngay.xlsx")
-                await bot.send_document(telegram_id, excel_doc, caption=msg, parse_mode="HTML")
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-            except Exception as e:
-                logger.error(f"Lỗi gửi evening tasks Excel: {e}")
+            import html
+            msg_text = f"🌙 <b>23:30 RỒI! BÁO CÁO TỔNG KẾT NGÀY:</b>\n\nCậu đã hoàn thành <b>{len(completed_task_ids)}/{len(tasks)}</b> nhiệm vụ (<b>{percent:.1f}%</b>).\n\n"
+            
+            for t in tasks:
+                task_id, category, title, description, target_time = t
+                if task_id not in completed_task_ids:
+                    task_info = f"❌ <b>ID {task_id}</b> | {target_time} - {html.escape(title)}\n"
+                    if len(msg_text) + len(task_info) > 3500:
+                        try:
+                            await bot.send_message(telegram_id, msg_text, parse_mode="HTML")
+                        except Exception as e:
+                            logger.error(f"Lỗi gửi evening tasks 1: {e}")
+                        msg_text = ""
+                    msg_text += task_info
+            
+            msg_text += "\nHãy kiểm điểm lại bản thân trước khi đi ngủ nhé!"
+            
+            if msg_text:
+                try:
+                    await bot.send_message(telegram_id, msg_text, parse_mode="HTML")
+                except Exception as e:
+                    logger.error(f"Lỗi gửi evening tasks 2: {e}")
 
 from src.scraper.mydtu_scraper import crawl_new_announcements
 from src.ai.strategy_planner import summarize_announcement

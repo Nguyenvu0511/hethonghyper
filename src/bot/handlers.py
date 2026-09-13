@@ -136,7 +136,9 @@ async def command_update_scores_handler(message: Message) -> None:
     msg = await message.answer("Đang thâm nhập vào MyDTU để lấy bảng điểm mới nhất. Cậu vui lòng chờ khoảng 30 giây...")
     
     # 1. Cào điểm
+    from src.scraper.mydtu_scraper import crawl_timetable
     scores = await crawl_student_scores()
+    timetable = await crawl_timetable()
     
     if not scores:
         await msg.edit_text("❌ Lỗi: Không thể lấy được bảng điểm. Có thể MyDTU đang bảo trì hoặc có thông báo KHẨN chặn trình duyệt.")

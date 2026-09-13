@@ -292,7 +292,7 @@ async def weekly_timetable_sync(bot: Bot):
     except Exception as e:
         logger.error(f"Lỗi khi đồng bộ lịch học tuần mới: {e}")
 
-def setup_scheduler(bot: Bot, user_telegram_id: str):
+def setup_scheduler(bot: Bot):
     """Khởi tạo và chạy Scheduler"""
     scheduler = AsyncIOScheduler(timezone='Asia/Ho_Chi_Minh')
     
@@ -300,7 +300,7 @@ def setup_scheduler(bot: Bot, user_telegram_id: str):
     scheduler.add_job(weekly_timetable_sync, 'cron', day_of_week='sun', hour=23, minute=0, args=[bot])
 
     # Lên lịch 5:30 sáng hàng ngày
-    scheduler.add_job(wake_up_call, 'cron', hour=5, minute=30, args=[bot, user_telegram_id])
+    scheduler.add_job(wake_up_call, 'cron', hour=5, minute=30, args=[bot])
     
     # Gửi tasks lúc 6:00
     scheduler.add_job(morning_tasks_reminder, 'cron', hour=6, minute=0, args=[bot])
@@ -310,16 +310,16 @@ def setup_scheduler(bot: Bot, user_telegram_id: str):
     scheduler.add_job(check_announcements_cron, 'cron', hour=18, minute=0, args=[bot])
     
     # Lên lịch 17:00 chiều
-    scheduler.add_job(fitness_reminder, 'cron', hour=17, minute=0, args=[bot, user_telegram_id])
+    scheduler.add_job(fitness_reminder, 'cron', hour=17, minute=0, args=[bot])
     
     # Lên lịch 23:30 tối kiểm tra tasks và gửi báo cáo cuối ngày
     scheduler.add_job(evening_tasks_check, 'cron', hour=23, minute=30, args=[bot])
     
     # Lên lịch 22:30 tối hàng ngày
-    scheduler.add_job(skincare_reminder, 'cron', hour=22, minute=30, args=[bot, user_telegram_id])
+    scheduler.add_job(skincare_reminder, 'cron', hour=22, minute=30, args=[bot])
     
     # Lên lịch 23:59 đêm để backup Database
-    scheduler.add_job(daily_db_backup, 'cron', hour=23, minute=59, args=[bot, user_telegram_id])
+    scheduler.add_job(daily_db_backup, 'cron', hour=23, minute=59, args=[bot])
     
     # Kiểm tra deadline mỗi 5 phút
     scheduler.add_job(check_upcoming_deadlines, 'cron', minute='*/5', args=[bot])

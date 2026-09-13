@@ -47,7 +47,7 @@ async def main() -> None:
     
     # Khởi chạy Scheduler (Giả định user đầu tiên là Admin để nhận thông báo)
     # Trong thực tế nên query Database lấy user_id
-    setup_scheduler(bot, "ADMIN_TELEGRAM_ID_HERE") # Cần update chỗ này nếu muốn push chính xác
+    setup_scheduler(bot) # Cần update chỗ này nếu muốn push chính xác
     
     # Xóa webhook cũ (nếu có) và bắt đầu polling
     await bot.delete_webhook(drop_pending_updates=True)

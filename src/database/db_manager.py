@@ -63,6 +63,7 @@ class DatabaseManager:
                 SELECT task_id, category, title, description, target_time 
                 FROM tasks 
                 WHERE user_id = ? AND frequency = 'daily'
+                ORDER BY target_time ASC
             ''', (user_id,))
             return cursor.fetchall()
 

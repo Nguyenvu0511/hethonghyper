@@ -258,10 +258,24 @@ async def auto_update_timetable(bot: Bot):
     except Exception as e:
         logger.error(f"Lỗi khi tự động cập nhật lịch học: {e}")
 
+
+async def weekly_timetable_sync(bot: Bot):
+    """Tự động cào lịch học mới vào lúc 23:00 tối Chủ Nhật hàng tuần"""
+    logger.info("Bắt đầu tự động đồng bộ lịch học tuần mới...")
+    from src.scraper.mydtu_scraper import crawl_timetable
+    try:
+        await crawl_timetable()
+        logger.info("Đã đồng bộ lịch học tuần mới thành công!")
+    except Exception as e:
+        logger.error(f"Lỗi khi đồng bộ lịch học tuần mới: {e}")
+
 def setup_scheduler(bot: Bot, user_telegram_id: str):
     """Khởi tạo và chạy Scheduler"""
     scheduler = AsyncIOScheduler(timezone='Asia/Ho_Chi_Minh')
     
+        # Cập nhật lịch học tuần mới vào 23:00 tối Chủ Nhật
+    scheduler.add_job(weekly_timetable_sync, 'cron', day_of_week='sun', hour=23, minute=0, args=[bot])
+
     # Lên lịch 5:30 sáng hàng ngày
     scheduler.add_job(wake_up_call, 'cron', hour=5, minute=30, args=[bot, user_telegram_id])
     

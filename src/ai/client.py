@@ -48,7 +48,7 @@ class AIClient:
             ]
         }
         
-        if is_json:
+        if is_json and "gemini" not in AI_MODEL_NAME.lower():
             payload["response_format"] = {"type": "json_object"}
             
         with httpx.Client(timeout=180.0) as client:

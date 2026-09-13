@@ -86,7 +86,7 @@ async def morning_tasks_reminder(bot: Bot):
                     # Xóa tasks cũ và lưu tasks mới
                     db.clear_old_tasks_and_roadmap(user_id)
                     for t in plan["daily_tasks"]:
-                        db.save_task(user_id, "daily", t.get("category", "Học thuật"), t.get("title", ""), t.get("description", ""), t.get("target_time", "20:00"))
+                        db.add_task(user_id, t.get("category", "Học thuật"), t.get("title", ""), t.get("description", ""), "daily", t.get("target_time", "20:00"))
         except Exception as e:
             logger.error(f"Lỗi khi tự động lập kế hoạch sáng: {e}")
             

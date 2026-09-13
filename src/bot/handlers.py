@@ -393,7 +393,7 @@ async def command_plan_today_handler(message: Message) -> None:
         if plan and plan.get("daily_tasks"):
             db.clear_old_tasks_and_roadmap(user_id)
             for t in plan["daily_tasks"]:
-                db.save_task(user_id, "daily", t.get("category", "Học thuật"), t.get("title", ""), t.get("description", ""), t.get("target_time", "20:00"))
+                db.add_task(user_id, t.get("category", "Học thuật"), t.get("title", ""), t.get("description", ""), "daily", t.get("target_time", "20:00"))
             await msg.edit_text(f"✅ Đã lên lịch trình động cho **{today_weekday}** thành công! Gõ /tasks để xem ngay.")
         else:
             err = plan.get('error', 'Không có error') if plan else 'Plan is None'

@@ -69,8 +69,7 @@ async def morning_tasks_reminder(bot: Bot):
                     schedule = json.load(f)
                     for item in schedule:
                         if item.get("weekday") == today_weekday:
-                            timetable_today += f"- {item.get('raw_info')}
-"
+                            timetable_today += f"- {item.get('raw_info')}\n"
             
             # Đọc điểm
             records_text = ""
@@ -79,8 +78,7 @@ async def morning_tasks_reminder(bot: Bot):
                     scores = json.load(f)
                     for item in scores:
                         if item['diem_chu'] in ['F', 'D', 'D+', 'C-']:
-                            records_text += f"- Môn yếu: {item['ten_mon']} (Điểm: {item['diem_chu']})
-"
+                            records_text += f"- Môn yếu: {item['ten_mon']} (Điểm: {item['diem_chu']})\n"
             
             if records_text:
                 plan = generate_daily_plan(records_text, timetable_today, f"{today_weekday} {now.strftime('%d/%m')}")

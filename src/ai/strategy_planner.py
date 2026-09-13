@@ -155,7 +155,10 @@ def generate_daily_plan(records_text, timetable_today, date_str):
     Yêu cầu:
     Tạo ra 3-5 nhiệm vụ trong ngày HÔM NAY.
     TUYỆT ĐỐI KHÔNG xếp nhiệm vụ trùng với khung giờ học trên trường.
-    Hãy chèn xen kẽ: 1 nhiệm vụ thể dục/chạy bộ, 1-2 nhiệm vụ tự học sâu (Deep Work) cho các môn yếu kém.
+    Hãy chèn xen kẽ các nhiệm vụ sau:
+    - 1 nhiệm vụ thể chất (thể dục/chạy bộ).
+    - Nhiệm vụ "Ôn bài / Làm bài tập" cho CHÍNH NHỮNG MÔN HỌC TRÊN TRƯỜNG ngày hôm nay (dựa vào lịch học hôm nay). Việc học môn trên trường phải được ưu tiên!
+    - 1 nhiệm vụ "Tự học sâu (Deep Work)" để cải thiện các môn yếu kém (F, D, C-).
     
     BẮT BUỘC TRẢ VỀ ĐÚNG ĐỊNH DẠNG JSON, KHÔNG CÓ COMMENTS:
     {{

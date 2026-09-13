@@ -39,7 +39,8 @@ async def main() -> None:
         BotCommand(command="update_scores", description="Cập nhật bảng điểm & Lộ trình"),
         BotCommand(command="check_news", description="Quét thông báo MyDTU"),
         BotCommand(command="scores", description="Xem bảng điểm MyDTU"),
-        BotCommand(command="quiz", description="Làm bài tập xóa mù chữ")
+        BotCommand(command="quiz", description="Làm bài tập xóa mù chữ"),
+        BotCommand(command="lichhoc", description="Xem thời khóa biểu tuần này")
     ]
     await bot.set_my_commands(commands)
 

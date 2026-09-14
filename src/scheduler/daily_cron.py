@@ -5,28 +5,36 @@ from aiogram import Bot
 
 logger = logging.getLogger(__name__)
 
-async def wake_up_call(bot: Bot, user_telegram_id: str):
+async def wake_up_call(bot: Bot):
     """Báo thức lúc 5:30 sáng"""
-    try:
-        await bot.send_message(
-            user_telegram_id, 
-            "🌅 Chào buổi sáng! Đã 5:30 rồi.\n"
-            "Hãy ra khỏi giường, chụp một bức ảnh ngoài trời và gửi cho tớ để điểm danh nhé!\n"
-            "Cậu có 10 phút. Không làm là trừ EXP!"
-        )
-    except Exception as e:
-        logger.error(f"Lỗi khi gửi wake_up_call: {e}")
+    from src.database.db_manager import db
+    users = db.get_all_users()
+    for u in users:
+        user_id, telegram_id, username = u
+        try:
+            await bot.send_message(
+                telegram_id, 
+                "🌅 Chào buổi sáng! Đã 5:30 rồi.\n"
+                "Hãy ra khỏi giường, chụp một bức ảnh ngoài trời và gửi cho tớ để điểm danh nhé!\n"
+                "Cậu có 10 phút. Không làm là trừ EXP!"
+            )
+        except Exception as e:
+            logger.error(f"Lỗi khi gửi wake_up_call: {e}")
 
-async def skincare_reminder(bot: Bot, user_telegram_id: str):
+async def skincare_reminder(bot: Bot):
     """Nhắc nhở Skincare lúc 22:30"""
-    try:
-        await bot.send_message(
-            user_telegram_id, 
-            "💆‍♂️ Đã 22:30. Đã đến giờ bảo dưỡng 'Giao diện'.\n"
-            "Hãy đi rửa mặt, thoa toner và kem dưỡng. Đừng quên đi ngủ sớm nhé!"
-        )
-    except Exception as e:
-        logger.error(f"Lỗi khi gửi skincare_reminder: {e}")
+    from src.database.db_manager import db
+    users = db.get_all_users()
+    for u in users:
+        user_id, telegram_id, username = u
+        try:
+            await bot.send_message(
+                telegram_id, 
+                "💆‍♂️ Đã 22:30. Đã đến giờ bảo dưỡng 'Giao diện'.\n"
+                "Hãy đi rửa mặt, thoa toner và kem dưỡng. Đừng quên đi ngủ sớm nhé!"
+            )
+        except Exception as e:
+            logger.error(f"Lỗi khi gửi skincare_reminder: {e}")
 
 async def fitness_reminder(bot: Bot, user_telegram_id: str):
     """Nhắc nhở tập thể dục lúc 17:00"""
@@ -216,23 +224,26 @@ async def check_announcements_cron(bot: Bot):
 from aiogram.types import FSInputFile
 import os
 
-async def daily_db_backup(bot: Bot, user_telegram_id: str):
+async def daily_db_backup(bot: Bot):
     """Gửi file database qua Telegram lúc 23:59 mỗi ngày để backup"""
-    try:
-        db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data', 'learning_system.db')
-        if os.path.exists(db_path):
-            file = FSInputFile(db_path, filename="learning_system_backup.db")
-            await bot.send_document(
-                user_telegram_id, 
-                document=file, 
-                caption="💾 **BACKUP DATABASE TỰ ĐỘNG** 💾\nĐây là toàn bộ dữ liệu của cậu tính đến thời điểm hiện tại. Hãy giữ tin nhắn này cẩn thận, nếu VPS sập thì dùng file này để khôi phục!",
-                parse_mode="Markdown"
-            )
-            logger.info("Đã gửi file backup database qua Telegram.")
-        else:
-            logger.error("Không tìm thấy file database để backup!")
-    except Exception as e:
-        logger.error(f"Lỗi khi gửi file backup: {e}")
+    from src.database.db_manager import db
+    users = db.get_all_users()
+    if users:
+        try:
+            db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data', 'learning_system.db')
+            if os.path.exists(db_path):
+                file = FSInputFile(db_path, filename="learning_system_backup.db")
+                await bot.send_document(
+                    users[0][1], 
+                    document=file, 
+                    caption="💾 **BACKUP DATABASE TỰ ĐỘNG** 💾\nĐây là toàn bộ dữ liệu của cậu tính đến thời điểm hiện tại. Hãy giữ tin nhắn này cẩn thận, nếu VPS sập thì dùng file này để khôi phục!",
+                    parse_mode="Markdown"
+                )
+                logger.info("Đã gửi file backup database qua Telegram.")
+            else:
+                logger.error("Không tìm thấy file database để backup!")
+        except Exception as e:
+            logger.error(f"Lỗi khi gửi file backup: {e}")
 
 from datetime import datetime, timedelta
 

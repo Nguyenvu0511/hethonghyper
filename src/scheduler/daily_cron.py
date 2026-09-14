@@ -254,6 +254,7 @@ from datetime import datetime, timedelta
 
 async def check_upcoming_deadlines(bot: Bot):
     """Kiểm tra và nhắc nhở các task sắp tới deadline (15 phút)"""
+    from src.database.db_manager import db
     users = db.get_all_users()
     for u in users:
         user_id, telegram_id, username = u

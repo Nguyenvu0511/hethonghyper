@@ -10,10 +10,10 @@ async def wake_up_call(bot: Bot):
     from src.database.db_manager import db
     users = db.get_all_users()
     for u in users:
-        user_id, telegram_id, username = u
+        user_id, user_telegram_id, username = u
         try:
             await bot.send_message(
-                telegram_id, 
+                user_telegram_id, 
                 "🌅 Chào buổi sáng! Đã 5:30 rồi.\n"
                 "Hãy ra khỏi giường, chụp một bức ảnh ngoài trời và gửi cho tớ để điểm danh nhé!\n"
                 "Cậu có 10 phút. Không làm là trừ EXP!"
@@ -26,31 +26,35 @@ async def skincare_reminder(bot: Bot):
     from src.database.db_manager import db
     users = db.get_all_users()
     for u in users:
-        user_id, telegram_id, username = u
+        user_id, user_telegram_id, username = u
         try:
             await bot.send_message(
-                telegram_id, 
+                user_telegram_id, 
                 "💆‍♂️ Đã 22:30. Đã đến giờ bảo dưỡng 'Giao diện'.\n"
                 "Hãy đi rửa mặt, thoa toner và kem dưỡng. Đừng quên đi ngủ sớm nhé!"
             )
         except Exception as e:
             logger.error(f"Lỗi khi gửi skincare_reminder: {e}")
 
-async def fitness_reminder(bot: Bot, user_telegram_id: str):
+async def fitness_reminder(bot: Bot):
     """Nhắc nhở tập thể dục lúc 17:00"""
-    try:
-        await bot.send_message(
-            user_telegram_id, 
-            "🏋️‍♂️ Đã 17:00. Thanh toán nợ Thể chất!\n"
-            "Môn Thể dục của cậu đang F đấy. Hãy đứng dậy tập ngay 45 phút rồi chụp ảnh mồ hôi ướt đẫm gửi tớ.\n"
-            "Nếu không nộp báo cáo, tối nay cắt mạng nghỉ chơi!"
-        )
-    except Exception as e:
-        logger.error(f"Lỗi khi gửi fitness_reminder: {e}")
+    from src.database.db_manager import db
+    users = db.get_all_users()
+    for u in users:
+        user_id, user_telegram_id, username = u
+        try:
+            await bot.send_message(
+                user_telegram_id, 
+                "🏋️‍♂️ Đã 17:00. Thanh toán nợ Thể chất!\n"
+                "Môn Thể dục của cậu đang F đấy. Hãy đứng dậy tập ngay 45 phút rồi chụp ảnh mồ hôi ướt đẫm gửi tớ.\n"
+                "Nếu không nộp báo cáo, tối nay cắt mạng nghỉ chơi!"
+            )
+        except Exception as e:
+            logger.error(f"Lỗi khi gửi fitness_reminder: {e}")
 
-from src.database.db_manager import db
-from src.utils.excel_generator import generate_tasks_excel
-from aiogram.types import FSInputFile
+    from src.database.db_manager import db
+    from src.utils.excel_generator import generate_tasks_excel
+    from aiogram.types import FSInputFile
 
 async def morning_tasks_reminder(bot: Bot):
     """Gửi danh sách nhiệm vụ lúc 6:00 sáng cho tất cả user"""
@@ -229,12 +233,13 @@ async def daily_db_backup(bot: Bot):
     from src.database.db_manager import db
     users = db.get_all_users()
     if users:
+        user_telegram_id = users[0][1]
         try:
             db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data', 'learning_system.db')
             if os.path.exists(db_path):
                 file = FSInputFile(db_path, filename="learning_system_backup.db")
                 await bot.send_document(
-                    users[0][1], 
+                    user_telegram_id, 
                     document=file, 
                     caption="💾 **BACKUP DATABASE TỰ ĐỘNG** 💾\nĐây là toàn bộ dữ liệu của cậu tính đến thời điểm hiện tại. Hãy giữ tin nhắn này cẩn thận, nếu VPS sập thì dùng file này để khôi phục!",
                     parse_mode="Markdown"

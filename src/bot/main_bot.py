@@ -42,7 +42,10 @@ async def main() -> None:
         BotCommand(command="quiz", description="Làm bài tập xóa mù chữ"),
         BotCommand(command="lichhoc", description="Xem thời khóa biểu tuần này")
     ]
-    await bot.set_my_commands(commands)
+    try:
+        await bot.set_my_commands(commands)
+    except Exception as e:
+        print(f"Không thể set commands (có thể do rate limit): {e}")
 
     
     # Khởi chạy Scheduler (Giả định user đầu tiên là Admin để nhận thông báo)

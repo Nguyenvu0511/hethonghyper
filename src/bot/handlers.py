@@ -41,9 +41,14 @@ async def command_status_handler(message: Message) -> None:
             return
             
         completed_task_ids = db.get_completed_tasks_today(user_id)
+        stats = db.get_user_stats(user_id)
+        exp, level, streak, last_active = stats if stats else (0, 1, 0, "Chưa rõ")
         
         import html
-        msg_text = "📋 <b>CHI TIẾT NHIỆM VỤ HÔM NAY:</b>\n\n"
+        msg_text = f"👤 <b>HỒ SƠ CỦA CẬU</b>\n"
+        msg_text += f"🏆 Level: <b>{level}</b> | ✨ EXP: <b>{exp}</b>\n"
+        msg_text += f"🔥 Chuỗi duy trì: <b>{streak} ngày</b>\n\n"
+        msg_text += "📋 <b>CHI TIẾT NHIỆM VỤ HÔM NAY:</b>\n\n"
         for t in tasks:
             task_id, category, title, description, target_time = t
             status_icon = "✅" if task_id in completed_task_ids else "▫️"
@@ -295,7 +300,14 @@ async def command_done_handler(message: Message) -> None:
         return
         
     db.log_daily_progress(user_id, task_id, "completed", "text", "Điểm danh qua lệnh /done", "Tốt")
-    await message.answer(f"🎉 Giỏi lắm! Cậu đã hoàn thành nhiệm vụ: **{task[3]}**!", parse_mode="Markdown")
+    db.check_and_update_streak(user_id, is_active=True)
+    leveled_up, new_level = db.add_exp(user_id, 10)
+    
+    reply_msg = f"🎉 Giỏi lắm! Cậu đã hoàn thành nhiệm vụ: **{task[3]}**!\n✨ Nhận được +10 EXP."
+    if leveled_up:
+        reply_msg += f"\n🏆 CHÚC MỪNG! Cậu đã thăng cấp lên Level {new_level}!"
+        
+    await message.answer(reply_msg, parse_mode="Markdown")
 
 @router.message(F.photo)
 async def photo_handler(message: Message, bot: Bot) -> None:
@@ -352,7 +364,15 @@ async def photo_handler(message: Message, bot: Bot) -> None:
         
     if status.upper() == "PASSED" and task_id:
         db.log_daily_progress(user_id, task_id, "completed", "photo", "Đã nộp ảnh bằng chứng hợp lệ.", feedback)
-        await msg.edit_text(f"✅ **KẾT QUẢ: [PASSED]**\n\nTuyệt vời! Nhiệm vụ **{task_category}** đã được đánh dấu HOÀN THÀNH. Tớ đã cộng EXP cho cậu!\n\n**Nhận xét của AI:**\n{feedback}", parse_mode="Markdown")
+        db.check_and_update_streak(user_id, is_active=True)
+        leveled_up, new_level = db.add_exp(user_id, 20) # Ảnh được +20 EXP
+        
+        reply_msg = f"✅ **KẾT QUẢ: [PASSED]**\n\nTuyệt vời! Nhiệm vụ **{task_category}** đã được đánh dấu HOÀN THÀNH.\n✨ Nhận được +20 EXP!\n"
+        if leveled_up:
+            reply_msg += f"🏆 CHÚC MỪNG! Cậu đã thăng cấp lên Level {new_level}!\n"
+        reply_msg += f"\n**Nhận xét của AI:**\n{feedback}"
+        
+        await msg.edit_text(reply_msg, parse_mode="Markdown")
     else:
         await msg.edit_text(f"Kết quả: [{status.upper()}]\n\nNhận xét của AI:\n{feedback}")
 sage(Command("scores"))

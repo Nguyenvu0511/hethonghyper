@@ -1,0 +1,13 @@
+# Bỏ qua file cấu hình biến môi trường cục bộ chứa mật khẩu và token
+.env
+
+# Bỏ qua thư mục cache của Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Bỏ qua thư mục cache của Playwright (nếu có)
+.playwright/
+
+# Bỏ qua ảnh chụp màn hình gỡ lỗi
+*.png

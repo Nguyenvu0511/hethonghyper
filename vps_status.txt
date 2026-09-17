@@ -1,0 +1,11 @@
+● mydtu_bot.service - MyDTU Kỷ Luật Bot
+     Loaded: loaded (/etc/systemd/system/mydtu_bot.service; enabled; preset: enabled)
+     Active: activating (auto-restart) (Result: exit-code) since Mon 2026-09-14 08:39:47 +07; 3s ago
+    Process: 313571 ExecStart=/root/hethonghyper/venv/bin/python -m src.bot.main_bot (code=exited, status=1/FAILURE)
+   Main PID: 313571 (code=exited, status=1/FAILURE)
+        CPU: 5.052s
+
+Sep 14 08:39:47 hoangvu-studybot systemd[1]: mydtu_bot.service: Failed with result 'exit-code'.
+Sep 14 08:39:47 hoangvu-studybot systemd[1]: mydtu_bot.service: Consumed 5.052s CPU time, 1.2M memory peak, 0B memory swap peak.
+
+---

@@ -1,0 +1,66 @@
+name: Quét Lịch Học MyDTU Định Kỳ
+
+on:
+  schedule:
+    # 1. Quét định kỳ mỗi 5 tiếng một lần để phát hiện thay đổi
+    - cron: '0 */5 * * *'
+    # 2. Tự động kích hoạt gửi báo cáo lịch học hàng ngày đúng 5h00 sáng giờ Việt Nam (22:00 UTC)
+    - cron: '0 22 * * *'
+  
+  # Hỗ trợ kích hoạt chạy thủ công từ trang GitHub Actions
+  workflow_dispatch:
+
+permissions:
+  contents: write  # Cần quyền write để có thể push file last_hash.txt và last_schedule.json lên repository
+
+jobs:
+  check-schedule:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Kiểm tra mã nguồn (Checkout)
+      uses: actions/checkout@v4
+
+    - name: Cài đặt Python 3.10
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Cài đặt thư viện Python
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+    - name: Cài đặt trình duyệt Playwright ẩn
+      run: |
+        # Chỉ cài đặt chromium và các dependencies hệ thống của nó để tiết kiệm thời gian
+        python -m playwright install --with-deps chromium
+
+    - name: Chạy kiểm tra thời khóa biểu
+      env:
+        MYDTU_USER: ${{ secrets.MYDTU_USER }}
+        MYDTU_PASS: ${{ secrets.MYDTU_PASS }}
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        DISCORD_USER_ID: ${{ secrets.DISCORD_USER_ID }}
+        TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      run: |
+        python check_schedule.py
+
+    - name: Lưu trữ và đẩy trạng thái mới lên GitHub (nếu có thay đổi)
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        
+        # Thêm các file thay đổi vào git index
+        git add last_hash.txt last_schedule.json last_sent_date.txt || true
+        
+        # Chỉ commit và push nếu có sự thay đổi thật sự
+        if ! git diff --cached --quiet; then
+          git commit -m "Cập nhật trạng thái thời khóa biểu mới [skip ci]"
+          git push
+        else
+          echo "Lịch học không có thay đổi, không cần đẩy mã nguồn."
+        fi

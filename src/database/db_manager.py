@@ -27,6 +27,17 @@ class DatabaseManager:
                 logger.info("Database initialized successfully.")
             except Exception as e:
                 logger.error(f"Error initializing database: {e}")
+                
+            # Migration: Thêm các cột gamification nếu chưa có
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN exp INTEGER DEFAULT 0")
+                cursor.execute("ALTER TABLE users ADD COLUMN level INTEGER DEFAULT 1")
+                cursor.execute("ALTER TABLE users ADD COLUMN streak INTEGER DEFAULT 0")
+                cursor.execute("ALTER TABLE users ADD COLUMN last_active_date DATE")
+                conn.commit()
+                logger.info("Migrated users table successfully.")
+            except Exception:
+                pass # Cột đã tồn tại
 
     def add_user(self, telegram_id, username):
         """Thêm người dùng mới"""
@@ -132,6 +143,45 @@ class DatabaseManager:
                 INSERT INTO seen_announcements (announcement_id, title)
                 VALUES (?, ?)
             ''', (announcement_id, title))
+            conn.commit()
+
+    def get_user_stats(self, user_id):
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT exp, level, streak, last_active_date FROM users WHERE user_id = ?', (user_id,))
+            return cursor.fetchone()
+
+    def add_exp(self, user_id, exp_delta):
+        """Thêm hoặc trừ EXP, cập nhật Level nếu cần. Tối đa Level = (EXP // 100) + 1"""
+        stats = self.get_user_stats(user_id)
+        if not stats: return
+        exp, level, streak, last_active = stats
+        new_exp = max(0, exp + exp_delta)
+        new_level = (new_exp // 100) + 1
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('UPDATE users SET exp = ?, level = ? WHERE user_id = ?', (new_exp, new_level, user_id))
+            conn.commit()
+        return new_level > level, new_level # trả về True nếu thăng cấp
+
+    def check_and_update_streak(self, user_id, is_active=True):
+        """Cập nhật streak. Nếu is_active=True, kiểm tra xem hôm nay đã điểm danh chưa, chưa thì tăng streak.
+           Nếu is_active=False (chạy vào cuối ngày), kiểm tra nếu hôm nay chưa điểm danh thì reset streak về 0."""
+        stats = self.get_user_stats(user_id)
+        if not stats: return
+        exp, level, streak, last_active_date = stats
+        today = datetime.now().strftime('%Y-%m-%d')
+        
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            if is_active:
+                if last_active_date != today:
+                    # Tăng streak
+                    cursor.execute('UPDATE users SET streak = streak + 1, last_active_date = ? WHERE user_id = ?', (today, user_id))
+            else:
+                if last_active_date != today:
+                    # Đứt chuỗi
+                    cursor.execute('UPDATE users SET streak = 0 WHERE user_id = ?', (user_id,))
             conn.commit()
 
 # Khởi tạo singleton

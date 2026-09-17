@@ -168,6 +168,14 @@ async def evening_tasks_check(bot: Bot):
             import html
             msg_text = f"🌙 <b>23:30 RỒI! BÁO CÁO TỔNG KẾT NGÀY:</b>\n\nCậu đã hoàn thành <b>{len(completed_task_ids)}/{len(tasks)}</b> nhiệm vụ (<b>{percent:.1f}%</b>).\n\n"
             
+            # Xử lý Chuỗi & EXP
+            if len(completed_task_ids) == 0 and len(tasks) > 0:
+                db.check_and_update_streak(user_id, is_active=False)
+                db.add_exp(user_id, -50)
+                msg_text += "⚠️ <b>PHẠT LƯỜI BIẾNG:</b>\n- Đứt chuỗi (Streak = 0)\n- Bị trừ 50 EXP!\n\n"
+            elif len(completed_task_ids) > 0:
+                msg_text += "🔥 Tuyệt vời! Cậu đã giữ vững ngọn lửa Chuỗi học tập!\n\n"
+            
             for t in tasks:
                 task_id, category, title, description, target_time = t
                 if task_id not in completed_task_ids:

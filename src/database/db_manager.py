@@ -57,6 +57,12 @@ class DatabaseManager:
             return result[0] if result else None
 
     def add_task(self, user_id, category, title, description, frequency, target_time):
+        import random
+        gestures = ["giơ 2 ngón tay (chữ V)", "đặt một cây bút bên cạnh", "đặt một cái nĩa/muỗng bên cạnh", "giơ ngón tay cái (Like)", "đặt một chiếc chìa khoá bên cạnh", "đặt một đồng xu/tờ tiền lẻ bên cạnh"]
+        if frequency == "daily" and "Xác thực chống gian lận" not in (description or ""):
+            req = random.choice(gestures)
+            description = (description or "") + f"\n\n🔒 Xác thực chống gian lận: Khi chụp ảnh minh chứng, BẮT BUỘC phải {req}. Nếu thiếu sẽ bị AI chấm rớt."
+            
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('''

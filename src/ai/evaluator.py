@@ -46,8 +46,9 @@ def evaluate_image_report(task_category, image_path):
     Sinh viên vừa nộp một BỨC ẢNH để chứng minh đã hoàn thành nhiệm vụ thuộc danh mục: '{task_category}'.
     
     Hãy quan sát bức ảnh và xác minh:
-    1. Ảnh này có thực sự khớp với yêu cầu của '{task_category}' không? (Ví dụ: Nếu là tập luyện thì phải có cảnh tập hoặc đổ mồ hôi. Nếu là Toán Cao Cấp thì phải là giấy nháp có công thức toán).
-    2. Trả về [PASS] nếu ảnh hợp lệ và chứng minh được nỗ lực, hoặc [FAIL] nếu ảnh sai, không liên quan, hoặc lấy từ mạng.
+    1. Ảnh này có thực sự khớp với yêu cầu chung của nhiệm vụ không?
+    2. QUAN TRỌNG NHẤT - CHỐNG GIAN LẬN (DYNAMIC VERIFICATION): Nếu trong nhiệm vụ (hoặc caption) có yêu cầu "Xác thực chống gian lận" (Ví dụ: giơ 2 ngón tay, đặt cái bút bi, cái nĩa, đồng xu... bên cạnh bài tập/khuôn mặt), bạn BẮT BUỘC phải tìm thấy chính xác vật thể/cử chỉ đó trong ảnh. Nếu thiếu -> đánh trượt ngay lập tức!
+    3. Trả về [PASS] nếu ảnh hợp lệ và chứng minh được nỗ lực + vượt qua được Xác thực chống gian lận (nếu có). Trả về [FAIL] nếu ảnh sai, thiếu vật thể xác thực, hoặc lấy từ mạng.
     
     Định dạng phản hồi BẮT BUỘC bắt đầu bằng chữ [PASS] hoặc [FAIL], sau đó là lời nhận xét nghiêm khắc.
     """

@@ -95,7 +95,7 @@ async def morning_tasks_reminder(bot: Bot):
                         if item['diem_chu'] in ['F', 'D', 'D+', 'C-']:
                             records_text += f"- Môn yếu: {item['ten_mon']} (Điểm: {item['diem_chu']})\n"
             
-            if records_text:
+            if True:
                 plan = generate_daily_plan(records_text, timetable_today, f"{today_weekday} {now.strftime('%d/%m')}")
                 if plan and plan.get("daily_tasks"):
                     # Xóa tasks cũ và lưu tasks mới
@@ -106,32 +106,30 @@ async def morning_tasks_reminder(bot: Bot):
             logger.error(f"Lỗi khi tự động lập kế hoạch sáng: {e}")
             
         tasks = db.get_daily_tasks(user_id)
+        completed_task_ids = db.get_completed_tasks_today(user_id)
+        
+        import html
+        
+        timetable_display = ""
+        if timetable_today:
+            for line in timetable_today.split("\n"):
+                if line.strip():
+                    parts = [p.strip() for p in line.replace("- ", "").split("|")]
+                    if len(parts) >= 4:
+                        time_str = parts[-1]
+                        subj_str = parts[-2]
+                        timetable_display += f"🏫 <b>{time_str}</b> - {subj_str}\n"
+                    else:
+                        timetable_display += f"🏫 {line}\n"
+        
+        msg_text = f"🌅 <b>CHÀO BUỔI SÁNG {html.escape(username)}!</b>\n"
+        if timetable_display:
+            msg_text += f"\n📅 <b>LỊCH HỌC TRÊN TRƯỜNG:</b>\n{timetable_display}\n"
+        else:
+            msg_text += "\n📅 <b>LỊCH HỌC TRÊN TRƯỜNG:</b>\n<i>Hôm nay không có tiết học nào trên trường.</i>\n\n"
+            
         if tasks:
-            completed_task_ids = db.get_completed_tasks_today(user_id)
-            
-            import html
-            
-            timetable_display = ""
-            if timetable_today:
-                for line in timetable_today.split("\n"):
-                    if line.strip():
-                        parts = [p.strip() for p in line.replace("- ", "").split("|")]
-                        if len(parts) >= 4:
-                            time_str = parts[-1]
-                            subj_str = parts[-2]
-                            timetable_display += f"🏫 <b>{time_str}</b> - {subj_str}\n"
-                        else:
-                            timetable_display += f"🏫 {line}\n"
-            
-            msg_text = f"🌅 <b>CHÀO BUỔI SÁNG {html.escape(username)}!</b>\n"
-            if timetable_display:
-                msg_text += f"\n📅 <b>LỊCH HỌC TRÊN TRƯỜNG:</b>\n{timetable_display}\n"
-            else:
-                msg_text += "\n📅 <b>LỊCH HỌC TRÊN TRƯỜNG:</b>\n<i>Hôm nay không có tiết học nào trên trường.</i>\n\n"
-                
             msg_text += "📋 <b>BẢNG NHIỆM VỤ HÀNG NGÀY CỦA CẬU:</b>\n"
-
-            
             for t in tasks:
                 task_id, category, title, description, target_time = t
                 status_icon = "✅" if task_id in completed_task_ids else "▫️"
@@ -148,12 +146,14 @@ async def morning_tasks_reminder(bot: Bot):
                 msg_text += task_info
                 
             msg_text += "\nNhớ gõ <code>/done &lt;ID_Nhiệm_vụ&gt;</code> khi hoàn thành nhé! Chúc một ngày năng suất!"
+        else:
+            msg_text += "Hôm nay không có nhiệm vụ AI nào được giao. Tự ôn tập nhé!"
             
-            if msg_text:
-                try:
-                    await bot.send_message(telegram_id, msg_text, parse_mode="HTML")
-                except Exception as e:
-                    logger.error(f"Lỗi gửi morning tasks 2: {e}")
+        if msg_text:
+            try:
+                await bot.send_message(telegram_id, msg_text, parse_mode="HTML")
+            except Exception as e:
+                logger.error(f"Lỗi gửi morning tasks 2: {e}")
 
 async def evening_tasks_check(bot: Bot):
     """Kiểm tra tiến độ lúc 23:30 tối và gửi báo cáo tổng kết"""

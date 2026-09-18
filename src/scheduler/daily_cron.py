@@ -15,8 +15,8 @@ async def wake_up_call(bot: Bot):
             await bot.send_message(
                 user_telegram_id, 
                 "🌅 Chào buổi sáng! Đã 5:30 rồi.\n"
-                "Hãy ra khỏi giường, chụp một bức ảnh ngoài trời và gửi cho tớ để điểm danh nhé!\n"
-                "Cậu có 10 phút. Không làm là trừ EXP!"
+                "Hãy ra khỏi giường và nộp ảnh điểm danh.\n"
+                "⚠️ LƯU Ý: Gõ /status để xem MẬT MÃ BẰNG HÌNH ẢNH hôm nay là gì nhé! Thiếu mật mã là trừ EXP!"
             )
         except Exception as e:
             logger.error(f"Lỗi khi gửi wake_up_call: {e}")
@@ -31,7 +31,7 @@ async def skincare_reminder(bot: Bot):
             await bot.send_message(
                 user_telegram_id, 
                 "💆‍♂️ Đã 22:30. Đã đến giờ bảo dưỡng 'Giao diện'.\n"
-                "Hãy đi rửa mặt, thoa toner và kem dưỡng. Đừng quên đi ngủ sớm nhé!"
+                "Hãy đi rửa mặt, thoa toner và kem dưỡng. Nhớ gõ /status kiểm tra Mật mã hình ảnh trước khi nộp nhé!"
             )
         except Exception as e:
             logger.error(f"Lỗi khi gửi skincare_reminder: {e}")
@@ -46,8 +46,8 @@ async def fitness_reminder(bot: Bot):
             await bot.send_message(
                 user_telegram_id, 
                 "🏋️‍♂️ Đã 17:00. Thanh toán nợ Thể chất!\n"
-                "Môn Thể dục của cậu đang F đấy. Hãy đứng dậy tập ngay 45 phút rồi chụp ảnh mồ hôi ướt đẫm gửi tớ.\n"
-                "Nếu không nộp báo cáo, tối nay cắt mạng nghỉ chơi!"
+                "Hãy đứng dậy tập ngay 45 phút rồi chụp ảnh mồ hôi ướt đẫm gửi tớ.\n"
+                "⚠️ Đừng quên gõ /status xem Mật mã hình ảnh yêu cầu là gì! Làm sai là tối nay cắt mạng nghỉ chơi!"
             )
         except Exception as e:
             logger.error(f"Lỗi khi gửi fitness_reminder: {e}")
@@ -102,6 +102,11 @@ async def morning_tasks_reminder(bot: Bot):
                     db.clear_old_tasks_and_roadmap(user_id)
                     for t in plan["daily_tasks"]:
                         db.add_task(user_id, t.get("category", "Học thuật"), t.get("title", ""), t.get("description", ""), "daily", t.get("target_time", "20:00"))
+                        
+                    # Chèn 3 nhiệm vụ cố định
+                    db.add_task(user_id, "Điểm danh buổi sáng", "Dậy sớm 5:30", "Hãy ra khỏi giường, chụp một bức ảnh ngoài trời và gửi cho tớ để điểm danh nhé!", "daily", "05:30")
+                    db.add_task(user_id, "Thể dục thể thao", "Thanh toán nợ Thể chất", "Hãy đứng dậy tập ngay 45 phút rồi chụp ảnh mồ hôi ướt đẫm gửi tớ.", "daily", "17:00")
+                    db.add_task(user_id, "Skincare / Chuẩn bị ngủ", "Bảo dưỡng Giao diện", "Hãy đi rửa mặt, thoa toner và kem dưỡng. Đừng quên đi ngủ sớm nhé!", "daily", "22:30")
         except Exception as e:
             logger.error(f"Lỗi khi tự động lập kế hoạch sáng: {e}")
             
@@ -327,8 +332,8 @@ def setup_scheduler(bot: Bot):
     # Lên lịch 5:30 sáng hàng ngày
     scheduler.add_job(wake_up_call, 'cron', hour=5, minute=30, args=[bot])
     
-    # Gửi tasks lúc 6:00
-    scheduler.add_job(morning_tasks_reminder, 'cron', hour=6, minute=0, args=[bot])
+    # Gửi tasks lúc 5:00 sáng (để tạo task trước 5:30)
+    scheduler.add_job(morning_tasks_reminder, 'cron', hour=5, minute=0, args=[bot])
     
     # Lên lịch 12:00 và 18:00 kiểm tra thông báo MyDTU
     scheduler.add_job(check_announcements_cron, 'cron', hour=12, minute=0, args=[bot])

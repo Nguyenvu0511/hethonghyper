@@ -342,15 +342,27 @@ async def photo_handler(message: Message, bot: Bot) -> None:
     import datetime
     if not task_id:
         now = datetime.datetime.now().time()
+        search_category = None
         if now.hour >= 5 and now.hour < 8:
-            task_category = "Điểm danh buổi sáng"
-            task_desc = "Chụp ảnh phong cảnh ngoài trời, ban công, đường phố hoặc ánh sáng mặt trời để chứng minh đã dậy khỏi giường."
+            search_category = "Điểm danh buổi sáng"
         elif now.hour >= 16 and now.hour < 19:
-            task_category = "Thể dục thể thao"
-            task_desc = "Chụp ảnh mồ hôi, cảnh đang chạy bộ, phòng gym, hoặc hoạt động thể thao."
+            search_category = "Thể dục thể thao"
         elif now.hour >= 22 or now.hour < 2:
-            task_category = "Skincare / Chuẩn bị ngủ"
-            task_desc = "Chụp ảnh bồn rửa mặt, kem dưỡng da, hoặc chỗ ngủ."
+            search_category = "Skincare / Chuẩn bị ngủ"
+            
+        if search_category:
+            tasks = db.get_daily_tasks(user_id)
+            for t in tasks:
+                t_id, cat, t_title, t_desc, t_time = t
+                if cat == search_category:
+                    task_id = t_id
+                    task_category = f"[{cat}] {t_title}"
+                    task_desc = t_desc
+                    break
+                    
+        if not task_id:
+            task_category = search_category or "Nhiệm vụ chưa rõ"
+            task_desc = "Dựa vào bối cảnh, đánh giá ảnh chụp. (Lưu ý: Nhiệm vụ này không có trong hệ thống, sinh viên không được cộng EXP)."
             
     # Send to AI
     prompt_context = f"Nhiệm vụ: {task_category}\nChi tiết nhiệm vụ: {task_desc}\nCaption của user: {caption}"

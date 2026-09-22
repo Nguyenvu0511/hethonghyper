@@ -49,6 +49,9 @@ async def command_status_handler(message: Message) -> None:
         msg_text += f"🏆 Level: <b>{level}</b> | ✨ EXP: <b>{exp}</b>\n"
         msg_text += f"🔥 Chuỗi duy trì: <b>{streak} ngày</b>\n\n"
         msg_text += "📋 <b>CHI TIẾT NHIỆM VỤ HÔM NAY:</b>\n\n"
+        from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+        
+        keyboard = []
         for t in tasks:
             task_id, category, title, description, target_time = t
             status_icon = "✅" if task_id in completed_task_ids else "▫️"
@@ -63,9 +66,19 @@ async def command_status_handler(message: Message) -> None:
                 
             msg_text += task_info
             
-        msg_text += "<b>Hãy gửi ảnh chụp bằng chứng bài tập vào đây để Tớ chấm điểm nhé!</b>"
+            # Nếu chưa xong và KHÔNG yêu cầu chụp ảnh, hiển thị nút Bấm
+            if task_id not in completed_task_ids:
+                if "Xác thực chống gian lận" not in (description or ""):
+                    keyboard.append([InlineKeyboardButton(text=f"✅ Xong: {title[:20]}", callback_data=f"done_{task_id}")])
+
+        markup = InlineKeyboardMarkup(inline_keyboard=keyboard) if keyboard else None
+
+        msg_text += "<b>Hãy gửi ảnh chụp bằng chứng bài tập vào đây (kèm ID ở phần caption) để Tớ chấm điểm nhé!</b>"
         if msg_text:
-            await message.answer(msg_text, parse_mode="HTML")
+            if markup:
+                await message.answer(msg_text, parse_mode="HTML", reply_markup=markup)
+            else:
+                await message.answer(msg_text, parse_mode="HTML")
             
     except Exception as e:
         import traceback
@@ -254,6 +267,8 @@ async def command_tasks_handler(message: Message) -> None:
             
         msg_text += "\n📋 <b>BẢNG NHIỆM VỤ HÀNG NGÀY CỦA CẬU:</b>\n"
         
+        from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+        keyboard = []
         for t in tasks:
             task_id, category, title, description, target_time = t
             status_icon = "✅" if task_id in completed_task_ids else "▫️"
@@ -266,9 +281,18 @@ async def command_tasks_handler(message: Message) -> None:
                 
             msg_text += task_info
             
-        msg_text += "\nNhớ gõ <code>/done &lt;ID_Nhiệm_vụ&gt;</code> khi hoàn thành nhé!"
+            if task_id not in completed_task_ids:
+                if "Xác thực chống gian lận" not in (description or ""):
+                    keyboard.append([InlineKeyboardButton(text=f"✅ Xong: {title[:20]}", callback_data=f"done_{task_id}")])
+            
+        markup = InlineKeyboardMarkup(inline_keyboard=keyboard) if keyboard else None
+            
+        msg_text += "\nNhớ gõ <code>/done &lt;ID_Nhiệm_vụ&gt;</code> hoặc bấm nút ở dưới (với các task không cần ảnh) khi hoàn thành nhé!"
         if msg_text:
-            await message.answer(msg_text, parse_mode="HTML")
+            if markup:
+                await message.answer(msg_text, parse_mode="HTML", reply_markup=markup)
+            else:
+                await message.answer(msg_text, parse_mode="HTML")
             
     except Exception as e:
         import traceback
@@ -313,6 +337,41 @@ async def command_done_handler(message: Message) -> None:
         reply_msg += f"\n🏆 CHÚC MỪNG! Cậu đã thăng cấp lên Level {new_level}!"
         
     await message.answer(reply_msg, parse_mode="Markdown")
+
+from aiogram.types import CallbackQuery
+
+@router.callback_query(F.data.startswith("done_"))
+async def process_done_callback(callback: CallbackQuery):
+    """Xử lý khi user bấm nút 'Hoàn thành' trên tin nhắn"""
+    task_id = int(callback.data.split("_")[1])
+    telegram_id = str(callback.from_user.id)
+    user_id = db.get_user_id(telegram_id)
+    
+    task = db.get_task_by_id(task_id)
+    if not task or task[1] != user_id:
+        await callback.answer("Không tìm thấy nhiệm vụ này!", show_alert=True)
+        return
+        
+    description = task[4] or ""
+    if "Xác thực chống gian lận" in description:
+        await callback.answer("⚠️ Nhiệm vụ này yêu cầu chụp ảnh xác thực! Hãy gửi ảnh nhé.", show_alert=True)
+        return
+        
+    completed_task_ids = db.get_completed_tasks_today(user_id)
+    if task_id in completed_task_ids:
+        await callback.answer("Nhiệm vụ này đã hoàn thành rồi!", show_alert=True)
+        return
+        
+    db.log_daily_progress(user_id, task_id, "completed", "text", "Điểm danh qua nút bấm", "Tốt")
+    db.check_and_update_streak(user_id, is_active=True)
+    leveled_up, new_level = db.add_exp(user_id, 10)
+    
+    reply_msg = f"🎉 Giỏi lắm! Cậu đã hoàn thành nhiệm vụ: **{task[3]}**!\n✨ Nhận được +10 EXP."
+    if leveled_up:
+        reply_msg += f"\n🏆 CHÚC MỪNG! Cậu đã thăng cấp lên Level {new_level}!"
+        
+    await callback.message.answer(reply_msg, parse_mode="Markdown")
+    await callback.answer("Đã ghi nhận hoàn thành!")
 
 @router.message(F.photo)
 async def photo_handler(message: Message, bot: Bot) -> None:

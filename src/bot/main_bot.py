@@ -40,7 +40,8 @@ async def main() -> None:
         BotCommand(command="check_news", description="Quét thông báo MyDTU"),
         BotCommand(command="scores", description="Xem bảng điểm MyDTU"),
         BotCommand(command="quiz", description="Làm bài tập xóa mù chữ"),
-        BotCommand(command="lichhoc", description="Xem thời khóa biểu tuần này")
+        BotCommand(command="lichhoc", description="Xem thời khóa biểu tuần này"),
+        BotCommand(command="done", description="Đánh dấu xong nhiệm vụ (nhập ID)")
     ]
     try:
         await bot.set_my_commands(commands)

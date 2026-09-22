@@ -299,6 +299,11 @@ async def command_done_handler(message: Message) -> None:
         await message.answer("Không tìm thấy nhiệm vụ này của cậu!")
         return
         
+    description = task[4] or ""
+    if "Xác thực chống gian lận" in description:
+        await message.answer("⚠️ Nhiệm vụ này yêu cầu **Xác thực bằng hình ảnh**! Cậu không thể dùng lệnh `/done`. Hãy chụp một bức ảnh thỏa mãn yêu cầu và gửi cho tớ (Nhớ ghi ID nhiệm vụ vào phần chú thích ảnh nhé).", parse_mode="Markdown")
+        return
+        
     db.log_daily_progress(user_id, task_id, "completed", "text", "Điểm danh qua lệnh /done", "Tốt")
     db.check_and_update_streak(user_id, is_active=True)
     leveled_up, new_level = db.add_exp(user_id, 10)

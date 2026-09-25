@@ -50,6 +50,7 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
 
 if __name__ == '__main__':
     PORT = 8080
+    socketserver.TCPServer.allow_reuse_address = True
     # Rang buoc 0.0.0.0 de IP ben ngoai co the truy cap vao
     with socketserver.TCPServer(("0.0.0.0", PORT), MyHandler) as httpd:
         logging.info(f"🚀 ddddocr Private API Server dang chay tai http://0.0.0.0:{PORT}")

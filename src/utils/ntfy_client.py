@@ -12,7 +12,7 @@ async def send_ntfy_alert(message: str, title: str = "Báo động từ Bot", pr
     priority: min, low, default, high, max
     """
     headers = {
-        "Title": title.encode('utf-8'),
+        "Title": title.encode('utf-8').decode('latin1'),
         "Priority": priority,
         "Tags": tags
     }

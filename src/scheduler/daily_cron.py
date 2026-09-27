@@ -1,3 +1,4 @@
+from src.utils.ntfy_client import send_ntfy_alert
 import asyncio
 import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -293,6 +294,7 @@ async def check_upcoming_deadlines(bot: Bot):
                 msg = f"🚨 <b>BÁO ĐỘNG ĐỎ! CHUẨN BỊ DEADLINE!</b> 🚨\n\nChỉ còn 15 phút nữa là đến giờ làm nhiệm vụ:\n📌 <b>[{cat_safe}]</b> {title_safe}\n⏰ Thời gian: {time_str}\n\nHãy chuẩn bị sẵn sàng ngay bây giờ! Đừng để trễ hẹn!"
                 try:
                     await bot.send_message(telegram_id, msg, parse_mode="HTML")
+                    await send_ntfy_alert(f"Chỉ còn 15 phút là đến deadline của: {title_safe}", "Báo động Deadline 🚨", "high", "warning")
                 except Exception as e:
                     logger.error(f"Lỗi gửi nhắc nhở deadline: {e}")
 

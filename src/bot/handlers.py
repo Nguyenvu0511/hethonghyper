@@ -451,7 +451,8 @@ async def photo_handler(message: Message, bot: Bot) -> None:
         await msg.edit_text(reply_msg, parse_mode="Markdown")
     else:
         await msg.edit_text(f"Kết quả: [{status.upper()}]\n\nNhận xét của AI:\n{feedback}")
-sage(Command("scores"))
+
+@router.message(Command("scores"))
 async def command_scores_handler(message: Message) -> None:
     """Xử lý lệnh /scores, xem lại bảng điểm đã lưu mà không cần cào lại"""
     file_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "scores_output.json")

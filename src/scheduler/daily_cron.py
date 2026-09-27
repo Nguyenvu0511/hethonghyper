@@ -324,6 +324,43 @@ async def weekly_timetable_sync(bot: Bot):
     except Exception as e:
         logger.error(f"Lỗi khi đồng bộ lịch học tuần mới: {e}")
 
+
+async def spam_overdue_tasks(bot: Bot):
+    """Spam user via ntfy every 5 minutes for any overdue tasks"""
+    from src.database.db_manager import db
+    from src.utils.ntfy_client import send_ntfy_alert
+    from datetime import datetime
+    
+    users = db.get_all_users()
+    now = datetime.now()
+    current_time_str = now.strftime("%H:%M")
+    
+    for u in users:
+        user_id, telegram_id, username = u
+        tasks = db.get_daily_tasks(user_id)
+        completed_task_ids = db.get_completed_tasks_today(user_id)
+        
+        if not tasks:
+            continue
+            
+        overdue_titles = []
+        for t in tasks:
+            task_id, category, title, description, time_str = t
+            if task_id in completed_task_ids:
+                continue
+                
+            # If target_time is passed
+            if time_str < current_time_str:
+                overdue_titles.append(title)
+                
+        if overdue_titles:
+            titles_str = ", ".join(overdue_titles)
+            msg = f"Cậu đang TRỄ HẠN: {titles_str}. Lên Telegram nộp báo cáo ngay để tắt chuông!!!"
+            try:
+                await send_ntfy_alert(msg, "BÁO ĐỘNG SPAM 🚨", "max", "rotating_light,skull")
+            except Exception as e:
+                pass
+
 def setup_scheduler(bot: Bot):
     """Khởi tạo và chạy Scheduler"""
     scheduler = AsyncIOScheduler(timezone='Asia/Ho_Chi_Minh')
@@ -358,6 +395,9 @@ def setup_scheduler(bot: Bot):
     
     # Cập nhật lịch học tuần mới vào 22:00 tối Chủ Nhật
     scheduler.add_job(auto_update_timetable, 'cron', day_of_week='sun', hour=22, minute=0, args=[bot])
+
+    # Spam m?i 5 phut
+    scheduler.add_job(spam_overdue_tasks, 'cron', minute='*/5', args=[bot])
 
     scheduler.start()
     logger.info("Đã khởi động Scheduler (Cron jobs).")

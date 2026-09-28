@@ -301,9 +301,16 @@ async def command_tasks_handler(message: Message) -> None:
         await message.answer(f"🚨 Lỗi hệ thống khi chạy /tasks:\n<pre>{html.escape(error_msg)}</pre>", parse_mode="HTML")
 
 @router.message(Command("done"))
-async def command_done_handler(message: Message) -> None:
+async def command_done_handler(message: Message, bot: Bot) -> None:
     """Đánh dấu hoàn thành nhiệm vụ"""
-    args = message.text.split()
+    if message.photo:
+        await photo_handler(message, bot)
+        return
+        
+    text = message.text or message.caption
+    if not text:
+        return
+    args = text.split()
     if len(args) < 2:
         await message.answer("Sử dụng lệnh: `/done <ID>`\nVí dụ: `/done 1`", parse_mode="Markdown")
         return
